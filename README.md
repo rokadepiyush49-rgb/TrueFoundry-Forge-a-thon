@@ -125,7 +125,7 @@ sequenceDiagram
     X->>T: user.tool_approval = allow
     T->>S: propose_edit (MCP)
     S->>S: write ONLY accepted hunks (one write) + journal entry
-    S-->>T: "applied hunk 1; user REJECTED hunk 2"
+    S-->>T: applied hunk 1, user REJECTED hunk 2
   end
   T-->>X: turn.done
 ```
@@ -169,7 +169,7 @@ flowchart TB
   GRAPH --> SUP
   PRI --> PACK
   SUP --> PACK["Budget packing: code for the best files, one-line pointers for the rest, per-file cap"]
-  PACK --> OUT["Context pack: every file with its evidence; every omission with its reason; most relevant last"]
+  PACK --> OUT["Context pack: every file with its evidence, every omission with its reason, most relevant last"]
 ```
 
 Why BM25 orders the primaries: an earlier weighted-fusion ranker beat BM25 on the queries we designed it on and **lost on held-out queries** (MRR 0.54 vs 0.78). We kept the evidence and dropped the clever ranking. The full story is in [docs/evaluation.md](docs/evaluation.md).
