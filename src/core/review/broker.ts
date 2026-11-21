@@ -1,6 +1,5 @@
 import type { TrueForgeApi as TF } from "@truefoundry/trueforge-sdk";
 import { ToolCallInfo } from "../trueforge/runner";
-import { MCP_SERVER_NAME } from "../trueforge/spec";
 import { FilePort } from "../diff/journal";
 import { ReviewStore, buildProposal, isFullyDecided, Proposal, EditScope } from "../diff/review";
 import { EditError } from "../diff/edits";
@@ -10,6 +9,7 @@ import { resolveInside, editKey, EditArgs, NewFileArgs, Plan } from "../../mcp/t
 
 export interface BrokerHost {
   root: string;
+  mcpName: string;
   fs: FilePort;
   index: ContextIndex;
   review: ReviewStore;
@@ -40,7 +40,7 @@ export class ApprovalBroker {
   constructor(private host: BrokerHost) {}
 
   async decide(call: ToolCallInfo): Promise<TF.ApprovalDecision> {
-    if (call.serverName && call.serverName !== MCP_SERVER_NAME) {
+    if (call.serverName && call.serverName !== this.host.mcpName) {
       return { status: "deny", reason: `ForgePilot only approves its own editor tools; ${call.serverName}/${call.name} was not expected.` };
     }
     if (READ_ONLY.has(call.name)) return { status: "allow" };

@@ -6,7 +6,7 @@ import { ChangeJournal, FilePort, AppliedChange } from "./diff/journal";
 import { ReviewStore, buildProposal, applyApprovedProposal, isFullyDecided, Proposal, EditScope } from "./diff/review";
 import { summarizeHunk } from "./diff/hunks";
 import { SessionRunner, RunHandlers, RunResult, StatusEvent, ToolCallInfo } from "./trueforge/runner";
-import { AgentDefinition, MCP_SERVER_NAME } from "./trueforge/spec";
+import { AgentDefinition, mcpServerName } from "./trueforge/spec";
 import { ApprovalBroker } from "./review/broker";
 import { CommandRunner } from "./nodeHost";
 import { startMcpServer, RunningMcpServer } from "../mcp/server";
@@ -66,6 +66,7 @@ export class ForgeCore {
   readonly agent: SessionRunner;
   readonly inline: SessionRunner;
   mcp?: RunningMcpServer;
+  readonly mcpName: string;
   private broker: ApprovalBroker;
   private active: { mode: Mode; turnKey: string; source: string; plan?: Plan; scope?: { rel: string; scope: EditScope }; cancelled: boolean } | undefined;
   private turnSeq = 0;
@@ -73,11 +74,13 @@ export class ForgeCore {
   constructor(private o: CoreOptions) {
     this.index = new ContextIndex(o.root);
     this.commands = new CommandRunner(o.root);
+    this.mcpName = mcpServerName(o.root);
     this.client = new TrueForge({ baseUrl: o.serverUrl, timeoutInSeconds: 3600, maxRetries: 0 } as ConstructorParameters<typeof TrueForge>[0]);
-    this.agent = new SessionRunner(this.client, o.agentDef, o.models, o.retry, `ForgePilot agent · ${path.basename(o.root)}`);
-    this.inline = new SessionRunner(this.client, o.inlineDef, o.models, o.retry, `ForgePilot inline · ${path.basename(o.root)}`);
+    this.agent = new SessionRunner(this.client, o.agentDef, o.models, o.retry, `ForgePilot agent · ${path.basename(o.root)}`, this.mcpName);
+    this.inline = new SessionRunner(this.client, o.inlineDef, o.models, o.retry, `ForgePilot inline · ${path.basename(o.root)}`, this.mcpName);
     this.broker = new ApprovalBroker({
       root: o.root,
+      mcpName: this.mcpName,
       fs: o.fs,
       index: this.index,
       review: this.review,
@@ -118,7 +121,7 @@ export class ForgeCore {
     await this.client.settings.mcpServers.createOrUpdate({
       manifest: {
         type: "remote",
-        name: MCP_SERVER_NAME,
+        name: this.mcpName,
         description: "ForgePilot: the user's VS Code workspace (read, search, retrieve context, propose reviewed edits, run commands).",
         url: this.mcp.url,
         auth: { type: "header", headers: { Authorization: `Bearer ${this.mcp.token}` } },
@@ -126,9 +129,14 @@ export class ForgeCore {
     });
   }
 
+  /** Cancel work, unregister the editor tools from TrueForge, then stop the MCP server. */
   async stop(): Promise<void> {
     await this.cancel();
-    await this.mcp?.close();
+    if (this.mcp) {
+      await this.client.settings.mcpServers.delete(this.mcpName).catch(() => undefined);
+      await this.mcp.close();
+      this.mcp = undefined;
+    }
   }
 
   get busy(): boolean {

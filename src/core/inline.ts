@@ -61,7 +61,8 @@ export function extractReplacement(reply: string): string {
   return code;
 }
 
-const ELISION = /^\s*(#|\/\/|\/\*|<!--)?\s*(\.\.\.|…)\s*(rest|remaining|existing|unchanged|same|code|$)|\b(rest of (the )?(code|function|file|implementation)|remains? unchanged|existing code here|code unchanged)\b/i;
+const COMMENT = /^\s*(#|\/\/|\/\*|\*|<!--|--)/;
+const ELIDED_WORDS = /\.\.\.|…|\brest of\b|\bunchanged\b|\bexisting (code|implementation|logic)\b|\bremaining (code|lines)\b|\bsame as (before|above)\b/i;
 
 /**
  * Guard against "lazy" replies that elide code ("# ... rest unchanged").
@@ -70,8 +71,12 @@ const ELISION = /^\s*(#|\/\/|\/\*|<!--)?\s*(\.\.\.|…)\s*(rest|remaining|existi
 export function detectElision(original: string, replacement: string): string | undefined {
   const orig = new Set(original.split("\n").map((l) => l.trim()));
   for (const line of replacement.split("\n")) {
-    if (orig.has(line.trim())) continue;
-    if (ELISION.test(line)) return line.trim();
+    const t = line.trim();
+    if (orig.has(t)) continue;
+    // a bare "..." line (Python Ellipsis bodies are allowed only if the original had them)
+    if (t === "..." || t === "…") return t;
+    // a comment that stands in for omitted code: "# ... rest unchanged", "// existing code"
+    if (COMMENT.test(line) && ELIDED_WORDS.test(t)) return t;
   }
   return undefined;
 }

@@ -1,4 +1,5 @@
 import * as path from "path";
+import { realpathSync } from "fs";
 import { ContextIndex } from "../core/context/indexer";
 import { retrieve, renderReport, ContextReport } from "../core/context/retrieve";
 import { ChangeJournal, FilePort } from "../core/diff/journal";
@@ -45,6 +46,23 @@ export function resolveInside(root: string, p: string): { abs: string; rel: stri
   const rel = path.relative(root, abs).split(path.sep).join("/");
   if (rel.startsWith("..") || path.isAbsolute(rel)) throw new ToolError(`Path ${p} is outside the workspace.`);
   if (rel === ".git" || rel.startsWith(".git/")) throw new ToolError("Refusing to touch the .git directory.");
+  // Follow symlinks on the deepest existing ancestor: a link inside the
+  // workspace must not let a write land outside it.
+  let probe = abs;
+  for (;;) {
+    try {
+      const real = realpathSync(probe);
+      const realRoot = realpathSync(root);
+      const relReal = path.relative(realRoot, real);
+      if (relReal.startsWith("..") || path.isAbsolute(relReal)) throw new ToolError(`Path ${p} resolves outside the workspace.`);
+      break;
+    } catch (e) {
+      if (e instanceof ToolError) throw e;
+      const parent = path.dirname(probe);
+      if (parent === probe) break;
+      probe = parent;
+    }
+  }
   return { abs, rel };
 }
 

@@ -170,7 +170,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<ForgePilot
       const { mentions, notes } = parseMentions(request, new Set(c.index.files.keys()), (n) => c.index.findSymbol(n));
       const full = notes.length ? `${request}\n\n${notes.join("\n")}` : request;
       view.reveal();
-      void c.runAgent(full, mentions);
+      c.runAgent(full, mentions).catch((e) => void vscode.window.showErrorMessage(`ForgePilot: ${(e as Error).message}`));
     }),
 
     vscode.commands.registerCommand("forgepilot.inlineEdit", async (args?: { instruction?: string }) => {

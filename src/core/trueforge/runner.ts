@@ -90,6 +90,7 @@ export class SessionRunner {
     private models: () => string[],
     private retry: () => { maxAttempts: number; baseDelayMs: number },
     private title: string,
+    private mcpName: string,
   ) {}
 
   get isRunning(): boolean {
@@ -109,10 +110,25 @@ export class SessionRunner {
 
   async ensureSession(): Promise<string> {
     if (this.sessionId) return this.sessionId;
-    const res = await this.client.sessions.create(
-      { agent: { spec: buildSpec(this.def, this.currentModel()) }, metadata: { client: "forgepilot", mode: this.def.name } } as unknown as TF.CreateSessionRequest,
-    );
-    this.sessionId = res.data.id;
+    // If TrueForge rejects the session for the current model (e.g. a model
+    // that is no longer configured), try the next configured model.
+    let lastError: unknown;
+    const models = this.models();
+    for (let i = this.modelIndex; i < Math.max(models.length, 1); i++) {
+      this.modelIndex = i;
+      try {
+        const res = await this.client.sessions.create(
+          { agent: { spec: buildSpec(this.def, this.currentModel(), this.mcpName) }, metadata: { client: "forgepilot", mode: this.def.name } } as unknown as TF.CreateSessionRequest,
+        );
+        this.sessionId = res.data.id;
+        break;
+      } catch (e) {
+        lastError = e;
+        const status = (e as { statusCode?: number }).statusCode ?? 0;
+        if (status < 400 || status >= 500) throw e; // TrueForge itself is unreachable: no point trying other models
+      }
+    }
+    if (!this.sessionId) throw lastError instanceof Error ? lastError : new Error("Could not create a TrueForge session for any configured model.");
     try {
       await this.client.sessions.update(this.sessionId, { title: this.title });
     } catch {
@@ -128,7 +144,7 @@ export class SessionRunner {
 
   private async switchModel(index: number): Promise<void> {
     this.modelIndex = index;
-    await this.client.sessions.update(this.sessionId!, { agent: { spec: buildSpec(this.def, this.currentModel()) } });
+    await this.client.sessions.update(this.sessionId!, { agent: { spec: buildSpec(this.def, this.currentModel(), this.mcpName) } });
   }
 
   async run(input: string, h: RunHandlers): Promise<RunResult> {

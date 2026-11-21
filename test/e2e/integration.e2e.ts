@@ -327,3 +327,53 @@ describe("inline edit through TrueForge", () => {
     expect(git("status --porcelain")).toBe("");
   });
 });
+
+describe("registration and configuration", () => {
+  it("two workspaces (two VS Code windows) never share or overwrite each other's tools", async () => {
+    const ws2 = mkdtempSync(path.join(tmpdir(), "forgepilot-e2e-second-"));
+    writeFileSync(path.join(ws2, "only_in_second.py"), "def second_workspace_marker():\n    return 2\n");
+    const core2 = new ForgeCore({
+      root: ws2,
+      serverUrl: TF_URL,
+      models: () => ["mock/scripted"],
+      retry: () => ({ maxAttempts: 1, baseDelayMs: 10 }),
+      budget: () => 2000,
+      fs: new NodeFilePort(),
+      agentDef,
+      inlineDef,
+      ui: { showReview: () => {}, confirmCommand: async () => false, rejectionFeedback: () => undefined, emit: () => {} },
+    });
+    await core2.start();
+    try {
+      expect(core2.mcpName).not.toBe(core.mcpName);
+      const names = ((await core.client.settings.mcpServers.list()) as unknown as { data: Array<{ name: string }> }).data.map((s) => s.name);
+      expect(names).toEqual(expect.arrayContaining([core.mcpName, core2.mcpName]));
+      // each core's agent sees only its own workspace
+      script("scripted", [{ tool: "retrieve_context", args: { query: "second workspace marker" } }, { text: "ok" }]);
+      const r2 = await core2.runAgent("find the marker");
+      expect(r2.status).toBe("done");
+      expect(mock.calls[mock.calls.length - 1].lastTool).toContain("only_in_second.py");
+      models = ["mock/scripted"];
+      script("scripted", [{ tool: "retrieve_context", args: { query: "add sub calc" } }, { text: "ok" }]);
+      const r1 = await core.runAgent("find calc");
+      expect(r1.status).toBe("done");
+      const seen = mock.calls[mock.calls.length - 1].lastTool;
+      expect(seen).toContain("pkg/calc.py");
+      expect(seen).not.toContain("only_in_second.py");
+    } finally {
+      await core2.stop();
+    }
+    const after = ((await core.client.settings.mcpServers.list()) as unknown as { data: Array<{ name: string }> }).data.map((s) => s.name);
+    expect(after).not.toContain(core2.mcpName); // unregistered on stop
+    expect(after).toContain(core.mcpName); // the other window is unaffected
+  });
+
+  it("falls back when the primary model is not configured in TrueForge at all", async () => {
+    models = ["mock/does-not-exist", "mock/scripted"];
+    script("scripted", [{ text: "fallback ok" }]);
+    const r = await core.runAgent("hello");
+    expect(r.status).toBe("done");
+    expect(r.model).toBe("mock/scripted");
+    expect(git("status --porcelain")).toBe("");
+  });
+});

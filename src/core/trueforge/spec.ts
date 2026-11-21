@@ -14,7 +14,16 @@ export interface AgentDefinition {
   maxTokens?: number;
 }
 
-export const MCP_SERVER_NAME = "forgepilot-editor";
+import { createHash } from "crypto";
+
+/**
+ * Name under which a workspace's editor tools are registered in TrueForge.
+ * It is derived from the workspace path so two VS Code windows never
+ * overwrite each other's registration (and never act on the wrong folder).
+ */
+export function mcpServerName(root: string): string {
+  return `forgepilot-${createHash("sha1").update(root).digest("hex").slice(0, 10)}`;
+}
 
 /**
  * Build the TrueForge AgentSpec for a definition and a model. Sessions are
@@ -22,7 +31,7 @@ export const MCP_SERVER_NAME = "forgepilot-editor";
  * a session's model be changed in place for inline specs, and switching the
  * model on the same session is how fallback keeps the conversation history.
  */
-export function buildSpec(def: AgentDefinition, model: string): TF.AgentSpec {
+export function buildSpec(def: AgentDefinition, model: string, mcpName: string): TF.AgentSpec {
   const spec: TF.AgentSpec = {
     model: { name: model, params: { temperature: 0, ...(def.maxTokens ? { maxTokens: def.maxTokens } : {}) } },
     instructions: def.instructions,
@@ -40,7 +49,7 @@ export function buildSpec(def: AgentDefinition, model: string): TF.AgentSpec {
   if (def.tools === "editor") {
     spec.mcpServers = [
       {
-        name: MCP_SERVER_NAME,
+        name: mcpName,
         enableTools: ["@all"],
         // Deferred tool loading: the rarely used tools (list_files, find_symbol)
         // stay deferred; tools whose arguments we must inspect for review are preloaded.

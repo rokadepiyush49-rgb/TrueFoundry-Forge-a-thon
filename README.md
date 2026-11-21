@@ -326,8 +326,8 @@ ForgePilot works with whatever models TrueForge is configured with; nothing is p
 
 | Suite | Command | Needs | Count |
 |---|---|---|---|
-| Unit + fuzz | `npm test` | nothing | 39 tests, including 3,000 randomized hunk/undo cases |
-| End-to-end vs. real TrueForge | `npm run test:e2e` | TrueForge running | 13 scenarios |
+| Unit + fuzz | `npm test` | nothing | 62 tests, including 3,000 randomized hunk/undo cases |
+| End-to-end vs. real TrueForge | `npm run test:e2e` | TrueForge running | 15 scenarios |
 | Inside a real VS Code | `npm run test:vscode` | TrueForge running, VS Code installed | 5 scenarios |
 | Retrieval evaluation | `npm run eval:retrieval -- ../flask-3.1.3 [--heldout\|--validation]` | Flask checkout | 38 queries |
 | Task verifiers + self-test | `test/verify/run_all.sh selftest ../flask-3.1.3` | Flask venv | 13 self-checks |
