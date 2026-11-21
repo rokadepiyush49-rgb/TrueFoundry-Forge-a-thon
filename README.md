@@ -243,7 +243,7 @@ Then either:
 Run **ForgePilot: Choose Models** from the command palette and pick the models TrueForge offers, primary first. Or set `forgepilot.models` in your user settings:
 
 ```json
-"forgepilot.models": ["gemini/flash", "openai/mini"]
+"forgepilot.models": ["anthropic/claude-haiku-5-5", "openai/gpt-5-4-mini"]
 ```
 
 The first is primary; the others are automatic fallbacks.
