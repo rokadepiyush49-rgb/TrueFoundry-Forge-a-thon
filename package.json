@@ -1,0 +1,124 @@
+{
+  "name": "forgepilot",
+  "displayName": "ForgePilot",
+  "description": "Editor-native coding agent on TrueForge: explainable context selection, hunk-level review driven by TrueForge tool approvals, cancellation that never half-applies, and automatic model fallback.",
+  "version": "0.1.0",
+  "publisher": "forgepilot",
+  "license": "MIT",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rokadepiyush49-rgb/TrueFoundry-Forge-a-thon.git"
+  },
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "AI",
+    "Programming Languages"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "forgepilot",
+          "title": "ForgePilot",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "forgepilot": [
+        {
+          "type": "webview",
+          "id": "forgepilot.agentView",
+          "name": "Agent"
+        }
+      ]
+    },
+    "commands": [
+      { "command": "forgepilot.inlineEdit", "title": "ForgePilot: Edit Selection with Instruction" },
+      { "command": "forgepilot.acceptHunk", "title": "ForgePilot: Accept Hunk" },
+      { "command": "forgepilot.rejectHunk", "title": "ForgePilot: Reject Hunk" },
+      { "command": "forgepilot.acceptAllHunks", "title": "ForgePilot: Accept All Remaining Hunks in File" },
+      { "command": "forgepilot.rejectAllHunks", "title": "ForgePilot: Reject All Remaining Hunks in File" },
+      { "command": "forgepilot.undoLastChange", "title": "ForgePilot: Undo Last Applied Change" },
+      { "command": "forgepilot.cancel", "title": "ForgePilot: Cancel Running Generation" },
+      { "command": "forgepilot.openSession", "title": "ForgePilot: Open TrueForge Session" },
+      { "command": "forgepilot.reindex", "title": "ForgePilot: Rebuild Context Index" }
+    ],
+    "keybindings": [
+      {
+        "command": "forgepilot.inlineEdit",
+        "key": "ctrl+alt+k",
+        "mac": "cmd+alt+k",
+        "when": "editorTextFocus && editorHasSelection"
+      },
+      {
+        "command": "forgepilot.cancel",
+        "key": "ctrl+alt+escape",
+        "mac": "cmd+alt+escape"
+      }
+    ],
+    "configuration": {
+      "title": "ForgePilot",
+      "properties": {
+        "forgepilot.serverUrl": {
+          "type": "string",
+          "default": "http://localhost:8790",
+          "description": "Base URL of the local TrueForge server (npx @truefoundry/trueforge@latest)."
+        },
+        "forgepilot.models": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "Ordered model FQNs configured in TrueForge (provider/model). The first is primary; the rest are automatic fallbacks."
+        },
+        "forgepilot.retry.maxAttempts": {
+          "type": "number",
+          "default": 2,
+          "description": "Attempts per model for transient failures (network, 429, 5xx) before falling back."
+        },
+        "forgepilot.retry.baseDelayMs": {
+          "type": "number",
+          "default": 600,
+          "description": "Base delay for exponential backoff between attempts."
+        },
+        "forgepilot.context.budgetTokens": {
+          "type": "number",
+          "default": 6000,
+          "description": "Token budget for automatically retrieved context per request."
+        },
+        "forgepilot.mcp.port": {
+          "type": "number",
+          "default": 0,
+          "description": "Port for the editor MCP server (0 = pick a free port)."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc --noEmit -p .",
+    "test": "vitest run",
+    "verify": "bash test/verify/run_all.sh"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "@truefoundry/trueforge-sdk": "0.185.0",
+    "diff": "^9.0.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/vscode": "^1.95.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.1"
+  }
+}
