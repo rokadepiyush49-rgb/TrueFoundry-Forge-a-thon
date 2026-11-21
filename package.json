@@ -42,24 +42,24 @@
     },
     "commands": [
       {
+        "command": "forgepilot.runAgent",
+        "title": "ForgePilot: Ask Agent\u2026"
+      },
+      {
         "command": "forgepilot.inlineEdit",
         "title": "ForgePilot: Edit Selection with Instruction"
       },
       {
-        "command": "forgepilot.acceptHunk",
-        "title": "ForgePilot: Accept Hunk"
-      },
-      {
-        "command": "forgepilot.rejectHunk",
-        "title": "ForgePilot: Reject Hunk"
+        "command": "forgepilot.chooseModels",
+        "title": "ForgePilot: Choose Models (primary + fallbacks)"
       },
       {
         "command": "forgepilot.acceptAllHunks",
-        "title": "ForgePilot: Accept All Remaining Hunks in File"
+        "title": "ForgePilot: Accept All Remaining Hunks"
       },
       {
         "command": "forgepilot.rejectAllHunks",
-        "title": "ForgePilot: Reject All Remaining Hunks in File"
+        "title": "ForgePilot: Reject All Remaining Hunks"
       },
       {
         "command": "forgepilot.undoLastChange",
@@ -76,6 +76,18 @@
       {
         "command": "forgepilot.reindex",
         "title": "ForgePilot: Rebuild Context Index"
+      },
+      {
+        "command": "forgepilot.acceptHunk",
+        "title": "ForgePilot: Accept Hunk"
+      },
+      {
+        "command": "forgepilot.rejectHunk",
+        "title": "ForgePilot: Reject Hunk"
+      },
+      {
+        "command": "forgepilot.reconsiderHunk",
+        "title": "ForgePilot: Reconsider Hunk"
       }
     ],
     "keybindings": [
@@ -128,6 +140,29 @@
           "description": "Port for the editor MCP server (0 = pick a free port)."
         }
       }
+    },
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "forgepilot.acceptHunk",
+          "when": "false"
+        },
+        {
+          "command": "forgepilot.rejectHunk",
+          "when": "false"
+        },
+        {
+          "command": "forgepilot.reconsiderHunk",
+          "when": "false"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "forgepilot.inlineEdit",
+          "when": "editorHasSelection",
+          "group": "navigation@100"
+        }
+      ]
     }
   },
   "scripts": {
@@ -137,7 +172,8 @@
     "test": "vitest run",
     "verify": "bash test/verify/run_all.sh",
     "test:e2e": "vitest run --config vitest.e2e.config.mjs",
-    "eval:retrieval": "tsx test/eval/retrieval.eval.ts"
+    "eval:retrieval": "tsx test/eval/retrieval.eval.ts",
+    "test:vscode": "npm run build && node esbuild.mjs --tests && node out/vscode-test/runTest.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
@@ -148,6 +184,7 @@
   "devDependencies": {
     "@types/node": "^22.20.5",
     "@types/vscode": "^1.95.0",
+    "@vscode/test-electron": "^3.1.0",
     "esbuild": "^0.28.2",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
