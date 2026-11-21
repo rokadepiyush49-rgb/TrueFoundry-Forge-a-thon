@@ -181,7 +181,7 @@ Why BM25 orders the primaries: an earlier weighted-fusion ranker beat BM25 on th
 | Sessions, turns, SSE streaming | one session per mode (inline and agent never cancel each other) | panel transcript; **Session ↗** opens the TrueForge session inside VS Code |
 | Tool approvals | `propose_edit`, `propose_new_file`, `run_command` need approval; approval drives the hunk review | review UI; approvals in the TrueForge session |
 | Deferred tool loading | only the tools whose arguments we review are preloaded; `list_files` and `find_symbol` are discovered on demand | TrueForge session (`call_tool`/`list_tools`) |
-| Dynamic sub-agents | the agent may delegate read-only exploration to a sub-agent | nested "sub-agent" threads in the panel and in the session |
+| Dynamic sub-agents | for multi-file changes the agent first sends one read-only "scout" sub-agent to find where similar features are implemented, registered, tested and documented; ForgePilot **denies any write from a sub-agent thread** | nested "sub-agent" threads in the panel and in the session |
 | Compaction | triggers at 40k input tokens on long runs | compaction notices in the panel and session |
 | Inline agent specs | sessions use an inline spec so `sessions.update` can switch the model in place (named-agent sessions cannot) | fallback keeps the same session id |
 
@@ -326,7 +326,7 @@ ForgePilot works with whatever models TrueForge is configured with; nothing is p
 
 | Suite | Command | Needs | Count |
 |---|---|---|---|
-| Unit + fuzz | `npm test` | nothing | 62 tests, including 3,000 randomized hunk/undo cases |
+| Unit + fuzz | `npm test` | nothing | 69 tests, including 3,000 randomized hunk/undo cases |
 | End-to-end vs. real TrueForge | `npm run test:e2e` | TrueForge running | 15 scenarios |
 | Inside a real VS Code | `npm run test:vscode` | TrueForge running, VS Code installed | 5 scenarios |
 | Retrieval evaluation | `npm run eval:retrieval -- ../flask-3.1.3 [--heldout\|--validation]` | Flask checkout | 38 queries |

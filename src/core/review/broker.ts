@@ -44,6 +44,10 @@ export class ApprovalBroker {
       return { status: "deny", reason: `ForgePilot only approves its own editor tools; ${call.serverName}/${call.name} was not expected.` };
     }
     if (READ_ONLY.has(call.name)) return { status: "allow" };
+    // Sub-agents are read-only scouts. This is enforced here, not just asked for in the prompt.
+    if (call.threadId && call.threadId !== "main") {
+      return { status: "deny", reason: `Sub-agents in ForgePilot are read-only; ${call.name} must be done by the main agent after the user reviews it.` };
+    }
     let args: Record<string, unknown>;
     try {
       args = JSON.parse(call.argsJson || "{}");
