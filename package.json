@@ -41,15 +41,42 @@
       ]
     },
     "commands": [
-      { "command": "forgepilot.inlineEdit", "title": "ForgePilot: Edit Selection with Instruction" },
-      { "command": "forgepilot.acceptHunk", "title": "ForgePilot: Accept Hunk" },
-      { "command": "forgepilot.rejectHunk", "title": "ForgePilot: Reject Hunk" },
-      { "command": "forgepilot.acceptAllHunks", "title": "ForgePilot: Accept All Remaining Hunks in File" },
-      { "command": "forgepilot.rejectAllHunks", "title": "ForgePilot: Reject All Remaining Hunks in File" },
-      { "command": "forgepilot.undoLastChange", "title": "ForgePilot: Undo Last Applied Change" },
-      { "command": "forgepilot.cancel", "title": "ForgePilot: Cancel Running Generation" },
-      { "command": "forgepilot.openSession", "title": "ForgePilot: Open TrueForge Session" },
-      { "command": "forgepilot.reindex", "title": "ForgePilot: Rebuild Context Index" }
+      {
+        "command": "forgepilot.inlineEdit",
+        "title": "ForgePilot: Edit Selection with Instruction"
+      },
+      {
+        "command": "forgepilot.acceptHunk",
+        "title": "ForgePilot: Accept Hunk"
+      },
+      {
+        "command": "forgepilot.rejectHunk",
+        "title": "ForgePilot: Reject Hunk"
+      },
+      {
+        "command": "forgepilot.acceptAllHunks",
+        "title": "ForgePilot: Accept All Remaining Hunks in File"
+      },
+      {
+        "command": "forgepilot.rejectAllHunks",
+        "title": "ForgePilot: Reject All Remaining Hunks in File"
+      },
+      {
+        "command": "forgepilot.undoLastChange",
+        "title": "ForgePilot: Undo Last Applied Change"
+      },
+      {
+        "command": "forgepilot.cancel",
+        "title": "ForgePilot: Cancel Running Generation"
+      },
+      {
+        "command": "forgepilot.openSession",
+        "title": "ForgePilot: Open TrueForge Session"
+      },
+      {
+        "command": "forgepilot.reindex",
+        "title": "ForgePilot: Rebuild Context Index"
+      }
     ],
     "keybindings": [
       {
@@ -74,7 +101,9 @@
         },
         "forgepilot.models": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "default": [],
           "description": "Ordered model FQNs configured in TrueForge (provider/model). The first is primary; the rest are automatic fallbacks."
         },
@@ -106,7 +135,9 @@
     "watch": "node esbuild.mjs --watch",
     "typecheck": "tsc --noEmit -p .",
     "test": "vitest run",
-    "verify": "bash test/verify/run_all.sh"
+    "verify": "bash test/verify/run_all.sh",
+    "test:e2e": "vitest run --config vitest.e2e.config.mjs",
+    "eval:retrieval": "tsx test/eval/retrieval.eval.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
@@ -118,6 +149,7 @@
     "@types/node": "^22.20.5",
     "@types/vscode": "^1.95.0",
     "esbuild": "^0.28.2",
+    "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vitest": "^5.1.1"
   }

@@ -216,8 +216,11 @@ export class ReviewStore {
   private proposals = new Map<string, Proposal>();
   private listeners: Listener[] = [];
 
-  onChange(fn: Listener): void {
+  onChange(fn: Listener): () => void {
     this.listeners.push(fn);
+    return () => {
+      this.listeners = this.listeners.filter((l) => l !== fn);
+    };
   }
 
   private emit(p: Proposal): void {

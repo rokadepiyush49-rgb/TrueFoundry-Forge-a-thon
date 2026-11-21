@@ -1,0 +1,55 @@
+import type { TrueForgeApi as TF } from "@truefoundry/trueforge-sdk";
+import { WRITE_TOOLS, PRELOAD_TOOLS } from "../../mcp/server";
+
+/** On-disk agent definition (agents/*.agent.json). Model is chosen at runtime from settings. */
+export interface AgentDefinition {
+  name: string;
+  description: string;
+  instructions: string;
+  tools: "editor" | "none";
+  compactionTokens?: number;
+  subagents?: boolean;
+  iterationLimit?: number;
+  skills?: string[];
+  maxTokens?: number;
+}
+
+export const MCP_SERVER_NAME = "forgepilot-editor";
+
+/**
+ * Build the TrueForge AgentSpec for a definition and a model. Sessions are
+ * created with an inline spec (not a named agent) because TrueForge only lets
+ * a session's model be changed in place for inline specs, and switching the
+ * model on the same session is how fallback keeps the conversation history.
+ */
+export function buildSpec(def: AgentDefinition, model: string): TF.AgentSpec {
+  const spec: TF.AgentSpec = {
+    model: { name: model, params: { temperature: 0, ...(def.maxTokens ? { maxTokens: def.maxTokens } : {}) } },
+    instructions: def.instructions,
+    config: {
+      iterationLimit: def.iterationLimit ?? 60,
+      dynamicSubAgents: { enabled: Boolean(def.subagents) },
+      contextManagement: {
+        compaction: def.compactionTokens
+          ? { enabled: true, trigger: { type: "input_tokens", value: def.compactionTokens } }
+          : { enabled: true },
+        largeToolResponse: { enabled: false },
+      },
+    },
+  };
+  if (def.tools === "editor") {
+    spec.mcpServers = [
+      {
+        name: MCP_SERVER_NAME,
+        enableTools: ["@all"],
+        // Deferred tool loading: the rarely used tools (list_files, find_symbol)
+        // stay deferred; tools whose arguments we must inspect for review are preloaded.
+        preload: false,
+        preloadTools: PRELOAD_TOOLS,
+        requireApprovalForTools: [...WRITE_TOOLS],
+      },
+    ];
+  }
+  if (def.skills?.length) spec.skills = def.skills.map((name) => ({ name, preload: false }));
+  return spec;
+}
