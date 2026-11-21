@@ -173,7 +173,8 @@
     "verify": "bash test/verify/run_all.sh",
     "test:e2e": "vitest run --config vitest.e2e.config.mjs",
     "eval:retrieval": "tsx test/eval/retrieval.eval.ts",
-    "test:vscode": "npm run build && node esbuild.mjs --tests && node out/vscode-test/runTest.js"
+    "test:vscode": "npm run build && node esbuild.mjs --tests && node out/vscode-test/runTest.js",
+    "setup:models": "node scripts/setup-models.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",

@@ -101,6 +101,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  await core?.client.settings.modelProviders.delete("mock").catch(() => undefined);
   await core?.stop();
   await mock?.close();
 });

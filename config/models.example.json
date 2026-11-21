@@ -1,0 +1,80 @@
+{
+  "$comment": "Copy to config/models.local.json (git-ignored), put real keys there and set enabled: true on the providers you use, then run: npm run setup:models. Keys stay in your local TrueForge; ForgePilot never calls a provider directly.",
+  "trueforgeUrl": "http://localhost:8790",
+  "providers": [
+    {
+      "enabled": false,
+      "name": "gemini",
+      "type": "google-gemini",
+      "auth": {
+        "apiKey": "YOUR_GEMINI_API_KEY"
+      },
+      "models": [
+        {
+          "name": "flash",
+          "modelId": "gemini-2.5-flash",
+          "properties": {
+            "contextLength": 1000000
+          }
+        }
+      ]
+    },
+    {
+      "enabled": false,
+      "name": "openai",
+      "type": "openai",
+      "auth": {
+        "apiKey": "YOUR_OPENAI_API_KEY"
+      },
+      "models": [
+        {
+          "name": "mini",
+          "modelId": "gpt-4.1-mini",
+          "properties": {
+            "contextLength": 1000000
+          }
+        }
+      ]
+    },
+    {
+      "enabled": false,
+      "name": "groq",
+      "type": "custom",
+      "baseUrl": "https://api.groq.com/openai/v1",
+      "auth": {
+        "apiKey": "YOUR_GROQ_API_KEY"
+      },
+      "models": [
+        {
+          "name": "llama",
+          "modelId": "llama-3.3-70b-versatile",
+          "properties": {
+            "contextLength": 131072
+          }
+        }
+      ]
+    },
+    {
+      "enabled": false,
+      "name": "local",
+      "type": "custom",
+      "baseUrl": "http://127.0.0.1:11434/v1",
+      "auth": {
+        "apiKey": "ollama"
+      },
+      "models": [
+        {
+          "name": "qwen-coder",
+          "modelId": "qwen2.5-coder:14b",
+          "properties": {
+            "contextLength": 32768
+          }
+        }
+      ]
+    }
+  ],
+  "forgepilotModels": [
+    "gemini/flash",
+    "openai/mini"
+  ]
+}

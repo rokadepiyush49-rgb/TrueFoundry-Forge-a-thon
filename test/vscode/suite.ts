@@ -211,6 +211,7 @@ export async function run(): Promise<void> {
     }
   }
   await mock.close();
+  await core.client.settings.modelProviders.delete("mock").catch(() => undefined);
   console.log(`${tests.length - failed}/${tests.length} VS Code integration tests passed`);
   if (failed) throw new Error(`${failed} VS Code integration test(s) failed`);
 }
