@@ -284,7 +284,11 @@ Select code → <kbd>Cmd/Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>K</kbd> (or right-click 
 ### Undo
 
 - <kbd>Cmd/Ctrl</kbd>+<kbd>Z</kbd> works in the editor (changes are applied as VS Code edits).
-- **ForgePilot: Undo Last Applied Change**, or the **Applied changes** list in the panel: undo a file, a single hunk (`↶ h2`) or a whole run. If you have since edited the same lines, ForgePilot refuses instead of overwriting your work.
+- **ForgePilot: Undo Last Applied Change** undoes the most recent file change.
+- **ForgePilot: Undo Last Run (all files)** undoes every file a request changed, as one all-or-nothing step.
+- The **Applied changes** list in the panel can undo a file, a single hunk (`↶ h2`) or a whole run.
+
+If you have since edited the same lines, ForgePilot refuses instead of overwriting your work.
 
 ### Cancel
 
@@ -320,28 +324,48 @@ PYTHON=../venv-flask/bin/python test/verify/run_all.sh a ../flask-3.1.3
 
 ForgePilot works with whatever models TrueForge is configured with; nothing is provider-specific. Inline edit is deliberately tool-less, so it behaves the same on small and local models. The models used during development and their cost are listed in the write-up.
 
-### Run it for free
+### Run it for free (and what we found)
 
-The brief accepts "a provider's free tier" or "an open-source model running on your own machine", and scores free models exactly like paid ones. A no-cost setup that covers all three tasks:
+The brief accepts "a provider's free tier" or "an open-source model running on your own machine", and scores free models exactly like paid ones. `npm run setup:free` registers models in your local TrueForge:
 
-| Role | Model | Free tier |
-|---|---|---|
-| Primary (Tasks A and B) | `google-gemini/gemini-3-5-flash-lite` | Gemini API free tier, no card; check your live limits at aistudio.google.com/rate-limit |
-| Fallback (Task C) | `groq/gpt-oss-120b` (type `custom`, `https://api.groq.com/openai/v1`) | Groq free plan; ~8K tokens/min is too small for agent mode but ample for inline edits, which is all Task C needs |
-| Optional, unlimited | a 7-8B coder model in Ollama (`http://127.0.0.1:11434/v1`) | runs on the laptop; fine for inline edit, slow for agent mode |
-
-Set it up with one command. It asks for each free key with hidden input, sends the keys only to your local TrueForge (never to disk) and checks each model with a one-line request:
+- It asks for each key with hidden input: Gemini, Groq, then optional Anthropic and OpenAI.
+- Keys go only to TrueForge, never to disk.
+- Each model is checked with a one-line request.
 
 ```bash
 npm run setup:free
 ```
 
-Free tiers rate-limit mid-run. ForgePilot handles that:
+What actually worked in our rehearsals (November 2026):
 
-- **Per-minute limits:** it waits out the provider's suggested delay on the **same** model (up to 4 attempts, at most 60 s per wait) instead of abandoning it.
-- **Daily quotas:** an exhausted daily quota falls back to the next model at once.
+| Model | Tier | Inline edit (A, C) | Agent mode (B) |
+|---|---|---|---|
+| `groq/gpt-oss-120b` | Groq free | **works** (Task A verifier 10/10 in 3.3 s) | no: Groq rejects the reasoning history TrueForge sends back on the second call, and the free plan allows ~8K tokens/min |
+| `google-gemini/gemini-3-5-flash-lite` | Gemini free | — | depends on your Google project; ours returned 403 "free tier not available for this project" |
+| `anthropic/claude-haiku-5-5` | paid (cents per run) | works | used for Task B |
+| local model via Ollama (`http://127.0.0.1:11434/v1`) | free, on the laptop | fine | slow on a 16 GB laptop |
 
-Both behaviours are covered by `test/e2e`. On Gemini's free tier, prompts may be used to improve Google's products, so use it with public code such as Flask, not private code.
+So a free model (Groq) covers Tasks A and C, including Task C's fallback. Task B in our recording used a paid model.
+
+Free tiers also rate-limit mid-run, and ForgePilot handles both kinds of limit:
+
+- **Per-minute limits:** it waits out the provider's suggested delay on the **same** model (up to 4 attempts, at most 60 s per wait).
+- **Daily quotas:** an exhausted quota falls back at once.
+
+Both behaviours are covered by `test/e2e`. Provider-specific request parameters go in `forgepilot.modelParams`.
+
+### Recording the demo and building the write-up
+
+```bash
+# VS Code goes full screen and runs Tasks A, B, C with on-screen verification; ffmpeg records it
+FLASK_DIR=../flask-3.1.3 DEMO_VENV=../venv-flask \
+DEMO_MODELS_A=groq/gpt-oss-120b DEMO_MODELS_B=anthropic/claude-haiku-5-5 \
+DEMO_MODELS_C=broken/unreachable,groq/gpt-oss-120b npm run demo:record
+
+npm run build:writeup   # docs/ForgePilot-Writeup.pdf (fails if over 3 pages)
+```
+
+The demo is **scripted**. Every step runs one of ForgePilot's own commands, the same ones the keybindings, CodeLens buttons and panel buttons call. The script only replaces the mouse and keyboard, and pauses so each step is readable. `broken/unreachable` (a closed port) is registered by `npm run setup:models -- --broken-primary`.
 
 ---
 
