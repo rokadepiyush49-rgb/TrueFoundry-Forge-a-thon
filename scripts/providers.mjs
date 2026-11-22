@@ -45,6 +45,20 @@ export const FREE_PROVIDERS = [
     test: "nvidia/mistral-large-4",
   },
   {
+    id: "cohere",
+    label: "Cohere trial, free (key from https://dashboard.cohere.com/api-keys, no card)",
+    manifest: (key) => ({
+      name: "cohere",
+      type: "custom",
+      baseUrl: "https://api.cohere.ai/compatibility/v1",
+      auth: { apiKey: key },
+      models: [
+        { name: "command-a", modelId: "command-a-03-2025", properties: { contextLength: 256000 } },
+      ],
+    }),
+    test: "cohere/command-a",
+  },
+  {
     id: "openrouter",
     label: "OpenRouter, free models (free key from https://openrouter.ai/keys, no card)",
     manifest: (key) => ({
