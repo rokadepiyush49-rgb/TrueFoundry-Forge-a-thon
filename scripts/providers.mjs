@@ -1,4 +1,4 @@
-// Free-tier providers registered by `npm run setup:free`.
+// Providers registered by `npm run setup:free` (two free tiers, then optional paid ones).
 // TrueForge names built-in provider types after the type itself (a
 // "google-gemini" provider's models are "google-gemini/<model>") and rejects a
 // `name` field for them; only "custom" (OpenAI-compatible) providers take a name.
@@ -27,6 +27,26 @@ export const FREE_PROVIDERS = [
       models: [{ name: "gpt-oss-120b", modelId: "openai/gpt-oss-120b", properties: { contextLength: 131072 } }],
     }),
     test: "groq/gpt-oss-120b",
+  },
+  {
+    id: "anthropic",
+    label: "Anthropic, paid, optional (key from https://platform.claude.com/settings/keys)",
+    manifest: (key) => ({
+      type: "anthropic",
+      auth: { apiKey: key },
+      models: [{ name: "claude-haiku-5-5", modelId: "claude-haiku-5-5", properties: { contextLength: 1000000 } }],
+    }),
+    test: "anthropic/claude-haiku-5-5",
+  },
+  {
+    id: "openai",
+    label: "OpenAI, paid, optional (key from https://platform.openai.com/api-keys)",
+    manifest: (key) => ({
+      type: "openai",
+      auth: { apiKey: key },
+      models: [{ name: "gpt-5-4-mini", modelId: "gpt-5.4-mini", properties: { contextLength: 400000 } }],
+    }),
+    test: "openai/gpt-5-4-mini",
   },
 ];
 
