@@ -51,6 +51,10 @@ interface TurnOutcome {
 }
 
 const WRITE_TOOL_NAMES = new Set(["propose_edit", "propose_new_file", "run_command"]);
+/** Attempts on the same model when it is rate-limiting (before falling back). */
+const RATE_LIMIT_ATTEMPTS = 4;
+const RATE_LIMIT_DEFAULT_WAIT_MS = 15000;
+const RATE_LIMIT_MAX_WAIT_MS = 60000;
 
 function unwrapDeferred(name: string, argsJson: string): { name: string; argsJson: string } {
   // Deferred MCP tools may arrive wrapped (e.g. call_tool {tool, arguments}).
@@ -171,7 +175,7 @@ export class SessionRunner {
             failure: failures[failures.length - 1]?.failure,
           });
         }
-        for (let attempt = 1; attempt <= Math.max(1, maxAttempts); attempt++) {
+        for (let attempt = 1; ; attempt++) {
           if (this.cancelled) return { status: "cancelled", model: this.currentModel(), failures };
           h.onStatus({ kind: "attempt", model: this.currentModel(), message: `Running on ${this.currentModel()} (attempt ${attempt})` });
           const out = await this.runOneTurn(content, previousTurnId, h);
@@ -201,8 +205,14 @@ export class SessionRunner {
             previousTurnId = out.previousTurnId ?? "none";
             content = input;
           }
-          if (!failure.retryable || attempt >= maxAttempts) break;
-          const wait = backoffMs(attempt, baseDelayMs);
+          // Rate limits are worth waiting out (free tiers reset each minute);
+          // other transient failures get a short exponential backoff.
+          const limit = failure.kind === "rate_limit" ? Math.max(maxAttempts, RATE_LIMIT_ATTEMPTS) : Math.max(1, maxAttempts);
+          if (!failure.retryable || attempt >= limit) break;
+          const wait =
+            failure.kind === "rate_limit"
+              ? Math.min(Math.max(failure.retryAfterMs ?? RATE_LIMIT_DEFAULT_WAIT_MS, 1000), RATE_LIMIT_MAX_WAIT_MS)
+              : backoffMs(attempt, baseDelayMs);
           h.onStatus({ kind: "retry", model: this.currentModel(), message: `${failure.message} Retrying in ${(wait / 1000).toFixed(1)} s.`, failure });
           await this.sleep(wait);
         }

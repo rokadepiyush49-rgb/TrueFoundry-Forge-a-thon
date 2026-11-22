@@ -5,7 +5,7 @@ import * as path from "path";
 import { detectElision, extractReplacement, fixIndentation, replaceSelection } from "../../src/core/inline";
 import { resolveInside, ToolError, editKey } from "../../src/mcp/tools";
 import { mcpServerName } from "../../src/core/trueforge/spec";
-import { classifyFailure } from "../../src/core/trueforge/errors";
+import { classifyFailure, parseRetryAfter } from "../../src/core/trueforge/errors";
 
 describe("inline elision guard", () => {
   const original = 'def f(x):\n    """Return x."""\n    return x';
@@ -98,5 +98,24 @@ describe("failure classification", () => {
     const f = classifyFailure(raw);
     expect(f.kind).toBe(kind);
     expect(f.retryable).toBe(retryable);
+  });
+});
+
+describe("rate-limit handling", () => {
+  it.each([
+    ["Rate limit reached. Please retry in 37.5s.", 37500],
+    ["retry-after: 12", 12000],
+    ['{"retryDelay": "20s"}', 20000],
+    ["Please try again in 1m30s", 90000],
+    ["try again in 250ms", 250],
+    ["Request failed (429): too many requests", undefined],
+  ])("parses %s", (raw, ms) => {
+    expect(parseRetryAfter(raw)).toBe(ms);
+  });
+  it("treats a per-minute limit as worth waiting for and a daily quota as not", () => {
+    const minute = classifyFailure("Request failed (429): Rate limit reached for requests per minute. Please retry in 2s");
+    expect(minute).toMatchObject({ kind: "rate_limit", retryable: true, retryAfterMs: 2000 });
+    const daily = classifyFailure("Request failed (429): Quota exceeded GenerateRequestsPerDayPerProjectPerModel-FreeTier");
+    expect(daily).toMatchObject({ kind: "rate_limit", retryable: false });
   });
 });

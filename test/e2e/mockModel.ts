@@ -33,6 +33,7 @@ function chunk(model: string, delta: Record<string, unknown>, finish: string | n
 export async function startMockModel(): Promise<MockModel> {
   const scripts = new Map<string, Step[]>();
   const calls: MockModel["calls"] = [];
+  const rateLimited = new Set<string>();
   let seq = 0;
   const server = http.createServer(async (req, res) => {
     const chunks: Buffer[] = [];
@@ -66,6 +67,15 @@ export async function startMockModel(): Promise<MockModel> {
       res.writeHead(500, { "Content-Type": "application/json" }).end(JSON.stringify({ error: { message: "mock upstream exploded" } }));
       return;
     }
+    if (base === "ratelimit-once" && !rateLimited.has(model)) {
+      rateLimited.add(model);
+      res.writeHead(429, { "Content-Type": "application/json", "Retry-After": "1" }).end(JSON.stringify({ error: { message: "Rate limit reached for requests per minute. Please retry in 1.2s." } }));
+      return;
+    }
+    if (base === "daily-quota") {
+      res.writeHead(429, { "Content-Type": "application/json" }).end(JSON.stringify({ error: { message: "Quota exceeded: GenerateRequestsPerDayPerProjectPerModel-FreeTier, limit: 20" } }));
+      return;
+    }
     if (base === "auth-fail") {
       res.writeHead(401, { "Content-Type": "application/json" }).end(JSON.stringify({ error: { message: "Incorrect API key provided" } }));
       return;
@@ -93,7 +103,7 @@ export async function startMockModel(): Promise<MockModel> {
       req.on("close", () => clearInterval(t));
       return;
     }
-    const steps = scripts.get(base) || scripts.get(model) || [{ text: "No script." }];
+    const steps = scripts.get(base) || scripts.get(model) || scripts.get("scripted") || [{ text: "No script." }];
     const step = steps[Math.min(toolMsgs, steps.length - 1)];
     if ("text" in step) {
       res.write(chunk(model, { role: "assistant", content: "" }));

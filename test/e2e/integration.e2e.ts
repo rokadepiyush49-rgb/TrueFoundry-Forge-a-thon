@@ -90,7 +90,7 @@ beforeAll(async () => {
       name: "mock",
       baseUrl: mock.url,
       auth: { apiKey: "test-key-not-secret" },
-      models: ["scripted", "scripted2", "inline-scripted", "inline-lazy", "always-500", "auth-fail", "slow", "edit-then-500"].map((m) => ({
+      models: ["scripted", "scripted2", "inline-scripted", "inline-lazy", "always-500", "auth-fail", "slow", "edit-then-500", "ratelimit-once", "daily-quota"].map((m) => ({
         name: m,
         modelId: m,
         properties: { contextLength: 128000 },
@@ -246,6 +246,31 @@ describe("resilience (Task C behaviour)", () => {
     expect(cont.lastUser).toMatch(/Applied so far/);
     expect(cont.lastUser).toMatch(/pkg\/calc\.py/);
     expect(calc().match(/return b \+ a/g)).toHaveLength(1);
+  });
+});
+
+describe("free-tier rate limits", () => {
+  it("waits out a per-minute rate limit on the same model instead of falling back", async () => {
+    models = ["mock/ratelimit-once", "mock/scripted2"];
+    script("scripted", [{ text: "done after waiting" }]);
+    const t0 = Date.now();
+    const r = await core.runAgent("hello");
+    expect(r.status).toBe("done");
+    expect(r.model).toBe("mock/ratelimit-once");
+    expect(r.failures).toHaveLength(1);
+    expect(r.failures[0].failure.kind).toBe("rate_limit");
+    expect(statusOf("fallback")).toHaveLength(0);
+    expect(Date.now() - t0).toBeGreaterThanOrEqual(1000); // honoured the provider's "retry in 1.2s"
+  });
+
+  it("falls back immediately when a daily quota is exhausted", async () => {
+    models = ["mock/daily-quota", "mock/scripted"];
+    script("scripted", [{ text: "fallback ok" }]);
+    const r = await core.runAgent("hello");
+    expect(r.status).toBe("done");
+    expect(r.model).toBe("mock/scripted");
+    expect(r.failures.filter((f) => f.model === "mock/daily-quota")).toHaveLength(1);
+    expect(statusOf("retry")).toHaveLength(0);
   });
 });
 

@@ -117,8 +117,8 @@ Nothing is provider-specific. Inline edit is tool-less, so it behaves the same o
 
 | Suite | Size |
 |---|---|
-| Unit + fuzz | 69 tests, plus 3,000 randomized hunk/undo cases |
-| End-to-end against a real TrueForge server and a scripted mock model | 15 scenarios |
+| Unit + fuzz | 76 tests, plus 3,000 randomized hunk/undo cases |
+| End-to-end against a real TrueForge server and a scripted mock model | 17 scenarios |
 | Inside a real VS Code extension host | 5 scenarios |
 | Task verifiers (mutation-tested against 9 wrong solutions) | 3 verifiers |
 

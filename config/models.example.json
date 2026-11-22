@@ -1,13 +1,73 @@
 {
-  "$comment": "Copy to config/models.local.json (git-ignored), put real keys there and set enabled: true on the providers you use, then run: npm run setup:models. Model ids match TrueForge's built-in catalog (Nov 2026). Gemini must use type google-gemini, not custom (TrueForge issue #1385: tool calls fail through custom providers). Keys stay in your local TrueForge; ForgePilot never calls a provider directly.",
+  "$comment": "Copy to config/models.local.json (git-ignored), put real keys there and set enabled: true on the providers you use, then run: npm run setup:models. The first three are FREE (no card). Model ids match TrueForge's built-in catalog (Nov 2026). Gemini must use type google-gemini, not custom (TrueForge issue #1385). Keys stay in your local TrueForge; ForgePilot never calls a provider directly.",
   "trueforgeUrl": "http://localhost:8790",
   "providers": [
+    {
+      "enabled": false,
+      "name": "gemini",
+      "type": "google-gemini",
+      "auth": {
+        "apiKey": "YOUR_FREE_GEMINI_API_KEY (aistudio.google.com/apikey)"
+      },
+      "models": [
+        {
+          "name": "gemini-3-5-flash-lite",
+          "modelId": "gemini-3.5-flash-lite",
+          "properties": {
+            "contextLength": 1048576
+          }
+        },
+        {
+          "name": "gemini-3-8-flash",
+          "modelId": "gemini-3.8-flash",
+          "properties": {
+            "contextLength": 1048576
+          }
+        }
+      ]
+    },
+    {
+      "enabled": false,
+      "name": "groq",
+      "type": "custom",
+      "baseUrl": "https://api.groq.com/openai/v1",
+      "auth": {
+        "apiKey": "YOUR_FREE_GROQ_API_KEY (console.groq.com/keys)"
+      },
+      "models": [
+        {
+          "name": "gpt-oss-120b",
+          "modelId": "openai/gpt-oss-120b",
+          "properties": {
+            "contextLength": 131072
+          }
+        }
+      ]
+    },
+    {
+      "enabled": false,
+      "name": "local",
+      "type": "custom",
+      "baseUrl": "http://127.0.0.1:11434/v1",
+      "auth": {
+        "apiKey": "ollama"
+      },
+      "models": [
+        {
+          "name": "coder",
+          "modelId": "qwen2.5-coder:7b",
+          "properties": {
+            "contextLength": 32768
+          }
+        }
+      ]
+    },
     {
       "enabled": false,
       "name": "anthropic",
       "type": "anthropic",
       "auth": {
-        "apiKey": "YOUR_ANTHROPIC_API_KEY"
+        "apiKey": "YOUR_ANTHROPIC_API_KEY (paid, optional)"
       },
       "models": [
         {
@@ -24,7 +84,7 @@
       "name": "openai",
       "type": "openai",
       "auth": {
-        "apiKey": "YOUR_OPENAI_API_KEY"
+        "apiKey": "YOUR_OPENAI_API_KEY (paid, optional)"
       },
       "models": [
         {
@@ -35,45 +95,10 @@
           }
         }
       ]
-    },
-    {
-      "enabled": false,
-      "name": "gemini",
-      "type": "google-gemini",
-      "auth": {
-        "apiKey": "YOUR_GEMINI_API_KEY"
-      },
-      "models": [
-        {
-          "name": "gemini-3-8-flash",
-          "modelId": "gemini-3.8-flash",
-          "properties": {
-            "contextLength": 1048576
-          }
-        }
-      ]
-    },
-    {
-      "enabled": false,
-      "name": "local",
-      "type": "custom",
-      "baseUrl": "http://127.0.0.1:11434/v1",
-      "auth": {
-        "apiKey": "ollama"
-      },
-      "models": [
-        {
-          "name": "qwen-coder",
-          "modelId": "qwen2.5-coder:14b",
-          "properties": {
-            "contextLength": 32768
-          }
-        }
-      ]
     }
   ],
   "forgepilotModels": [
-    "anthropic/claude-haiku-5-5",
-    "openai/gpt-5-4-mini"
+    "gemini/gemini-3-5-flash-lite",
+    "groq/gpt-oss-120b"
   ]
 }

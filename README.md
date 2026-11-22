@@ -243,7 +243,7 @@ Then either:
 Run **ForgePilot: Choose Models** from the command palette and pick the models TrueForge offers, primary first. Or set `forgepilot.models` in your user settings:
 
 ```json
-"forgepilot.models": ["anthropic/claude-haiku-5-5", "openai/gpt-5-4-mini"]
+"forgepilot.models": ["gemini/gemini-3-5-flash-lite", "groq/gpt-oss-120b"]
 ```
 
 The first is primary; the others are automatic fallbacks.
@@ -320,14 +320,31 @@ PYTHON=../venv-flask/bin/python test/verify/run_all.sh a ../flask-3.1.3
 
 ForgePilot works with whatever models TrueForge is configured with; nothing is provider-specific. Inline edit is deliberately tool-less, so it behaves the same on small and local models. The models used during development and their cost are listed in the write-up.
 
+### Run it for free
+
+The brief accepts "a provider's free tier" or "an open-source model running on your own machine", and scores free models exactly like paid ones. A no-cost setup that covers all three tasks:
+
+| Role | Model | Free tier |
+|---|---|---|
+| Primary (Tasks A and B) | `gemini/gemini-3-5-flash-lite` (type `google-gemini`) | Gemini API free tier, no card; check your live limits at aistudio.google.com/rate-limit |
+| Fallback (Task C) | `groq/gpt-oss-120b` (type `custom`, `https://api.groq.com/openai/v1`) | Groq free plan; ~8K tokens/min is too small for agent mode but ample for inline edits, which is all Task C needs |
+| Optional, unlimited | a 7-8B coder model in Ollama (`http://127.0.0.1:11434/v1`) | runs on the laptop; fine for inline edit, slow for agent mode |
+
+Free tiers rate-limit mid-run. ForgePilot handles that:
+
+- **Per-minute limits:** it waits out the provider's suggested delay on the **same** model (up to 4 attempts, at most 60 s per wait) instead of abandoning it.
+- **Daily quotas:** an exhausted daily quota falls back to the next model at once.
+
+Both behaviours are covered by `test/e2e`. On Gemini's free tier, prompts may be used to improve Google's products, so use it with public code such as Flask, not private code.
+
 ---
 
 ## Testing and evaluation
 
 | Suite | Command | Needs | Count |
 |---|---|---|---|
-| Unit + fuzz | `npm test` | nothing | 69 tests, including 3,000 randomized hunk/undo cases |
-| End-to-end vs. real TrueForge | `npm run test:e2e` | TrueForge running | 15 scenarios |
+| Unit + fuzz | `npm test` | nothing | 76 tests, including 3,000 randomized hunk/undo cases |
+| End-to-end vs. real TrueForge | `npm run test:e2e` | TrueForge running | 17 scenarios |
 | Inside a real VS Code | `npm run test:vscode` | TrueForge running, VS Code installed | 5 scenarios |
 | Retrieval evaluation | `npm run eval:retrieval -- ../flask-3.1.3 [--heldout\|--validation]` | Flask checkout | 38 queries |
 | Task verifiers + self-test | `test/verify/run_all.sh selftest ../flask-3.1.3` | Flask venv | 13 self-checks |

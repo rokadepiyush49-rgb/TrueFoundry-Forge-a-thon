@@ -7,6 +7,26 @@ export interface Failure {
   /** Plain-language message for the user. */
   message: string;
   raw: string;
+  /** Provider-suggested wait before retrying (rate limits), when the error says so. */
+  retryAfterMs?: number;
+}
+
+/**
+ * Extract a provider's suggested retry delay from an error message, e.g.
+ * "Please retry in 37.5s", "retry-after: 12", "retryDelay": "20s", "try again in 1m30s".
+ */
+export function parseRetryAfter(raw: string): number | undefined {
+  const m =
+    raw.match(/retry[_ -]?after["':\s]+(\d+(?:\.\d+)?)\s*(ms|s|sec|seconds)?/i) ||
+    raw.match(/retry ?delay["':\s]+"?(\d+(?:\.\d+)?)\s*(ms|s)?/i) ||
+    raw.match(/(?:retry|try again) in (\d+(?:\.\d+)?)\s*(ms|s|sec|seconds)\b/i);
+  if (m) {
+    const n = Number(m[1]);
+    return Math.round(m[2] === "ms" ? n : n * 1000);
+  }
+  const mm = raw.match(/(?:retry|try again) in (\d+)m(?:(\d+(?:\.\d+)?)s)?/i);
+  if (mm) return Math.round((Number(mm[1]) * 60 + Number(mm[2] || 0)) * 1000);
+  return undefined;
 }
 
 /**
@@ -24,8 +44,18 @@ export function classifyFailure(raw: string): Failure {
   if (status === 404 || has(/model[^.]{0,40}(not found|does not exist|unknown)|no such model/i)) {
     return { kind: "model_not_found", retryable: false, message: "The configured model does not exist at this provider.", raw: r };
   }
-  if (status === 429 || has(/rate.?limit|too many requests|quota/i)) {
-    return { kind: "rate_limit", retryable: true, message: "The model provider is rate-limiting requests.", raw: r };
+  if (status === 429 || has(/rate.?limit|too many requests|quota|resource.?exhausted/i)) {
+    // A daily quota will not reset in seconds: fall back instead of waiting.
+    if (has(/per ?day|PerDay|daily|requests per day|RPD/i)) {
+      return { kind: "rate_limit", retryable: false, message: "The model's daily free-tier quota is used up.", raw: r };
+    }
+    return {
+      kind: "rate_limit",
+      retryable: true,
+      message: "The model provider is rate-limiting requests (common on free tiers).",
+      raw: r,
+      retryAfterMs: parseRetryAfter(r),
+    };
   }
   if (has(/ECONNREFUSED|ENOTFOUND|EAI_AGAIN|ECONNRESET|EHOSTUNREACH|ENETUNREACH|fetch failed|socket hang up|connect|network|unreachable|getaddrinfo/i)) {
     return { kind: "unreachable", retryable: true, message: "The model endpoint could not be reached.", raw: r };
