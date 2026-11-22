@@ -31,11 +31,21 @@ export function mcpServerName(root: string): string {
  * a session's model be changed in place for inline specs, and switching the
  * model on the same session is how fallback keeps the conversation history.
  */
-export function buildSpec(def: AgentDefinition, model: string, mcpName: string): TF.AgentSpec {
+/**
+ * Build the spec. `extraParams` are provider-specific request parameters for
+ * this model only (forwarded by TrueForge as-is), e.g. Groq's
+ * {"reasoning_format": "hidden"} for gpt-oss so its reasoning is not echoed
+ * back in multi-turn history, which Groq rejects.
+ */
+export function buildSpec(def: AgentDefinition, model: string, mcpName: string, extraParams: Record<string, unknown> = {}): TF.AgentSpec {
   const spec: TF.AgentSpec = {
-    model: { name: model, params: { temperature: 0, ...(def.maxTokens ? { maxTokens: def.maxTokens } : {}) } },
+    model: { name: model, params: { temperature: 0, ...(def.maxTokens ? { maxTokens: def.maxTokens } : {}), ...extraParams } },
     instructions: def.instructions,
     config: {
+      // ForgePilot's UI never renders these; dropping their tool schemas saves
+      // tokens on every request (matters on free tiers with small per-minute limits).
+      askUserQuestions: { enabled: false },
+      generativeUi: { enabled: false },
       iterationLimit: def.iterationLimit ?? 60,
       dynamicSubAgents: { enabled: Boolean(def.subagents) },
       contextManagement: {

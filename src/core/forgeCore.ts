@@ -44,6 +44,8 @@ export interface CoreOptions {
   models: () => string[];
   retry: () => { maxAttempts: number; baseDelayMs: number };
   budget: () => number;
+  /** Provider-specific parameters per model FQN (see buildSpec). */
+  modelParams?: () => Record<string, Record<string, unknown>>;
   fs: FilePort;
   ui: CoreUi;
   agentDef: AgentDefinition;
@@ -76,8 +78,8 @@ export class ForgeCore {
     this.commands = new CommandRunner(o.root);
     this.mcpName = mcpServerName(o.root);
     this.client = new TrueForge({ baseUrl: o.serverUrl, timeoutInSeconds: 3600, maxRetries: 0 } as ConstructorParameters<typeof TrueForge>[0]);
-    this.agent = new SessionRunner(this.client, o.agentDef, o.models, o.retry, `ForgePilot agent · ${path.basename(o.root)}`, this.mcpName);
-    this.inline = new SessionRunner(this.client, o.inlineDef, o.models, o.retry, `ForgePilot inline · ${path.basename(o.root)}`, this.mcpName);
+    this.agent = new SessionRunner(this.client, o.agentDef, o.models, o.retry, `ForgePilot agent · ${path.basename(o.root)}`, this.mcpName, o.modelParams);
+    this.inline = new SessionRunner(this.client, o.inlineDef, o.models, o.retry, `ForgePilot inline · ${path.basename(o.root)}`, this.mcpName, o.modelParams);
     this.broker = new ApprovalBroker({
       root: o.root,
       mcpName: this.mcpName,
@@ -175,7 +177,9 @@ export class ForgeCore {
     this.o.ui.emit({ type: "run", mode: "agent", phase: "start", request, turnKey });
     // Automatic context: a pointer pack (paths + reasons, no code) the agent can follow up on.
     const rels = mentions.filter((m) => this.index.files.has(m));
-    const report = retrieve(this.index, request, { budget: Math.min(this.o.budget(), 2500), mentions: rels, includeCode: false });
+    // 20 pointers (~500 tokens): 100% recall of the files to change on all three
+    // evaluation sets; 10 pointers dropped to 89-96% (docs/evaluation.md).
+    const report = retrieve(this.index, request, { budget: Math.min(this.o.budget(), 2500), mentions: rels, includeCode: false, maxPointers: 20 });
     this.o.ui.emit({ type: "context", report, origin: "auto" });
     const mentioned = await Promise.all(
       rels.map(async (r) => `--- @${r} ---\n${(await this.o.fs.read(path.join(this.o.root, r))) ?? "(missing)"}`),

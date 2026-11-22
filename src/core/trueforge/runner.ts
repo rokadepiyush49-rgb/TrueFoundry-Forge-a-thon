@@ -95,6 +95,7 @@ export class SessionRunner {
     private retry: () => { maxAttempts: number; baseDelayMs: number },
     private title: string,
     private mcpName: string,
+    private modelParams: () => Record<string, Record<string, unknown>> = () => ({}),
   ) {}
 
   get isRunning(): boolean {
@@ -122,7 +123,7 @@ export class SessionRunner {
       this.modelIndex = i;
       try {
         const res = await this.client.sessions.create(
-          { agent: { spec: buildSpec(this.def, this.currentModel(), this.mcpName) }, metadata: { client: "forgepilot", mode: this.def.name } } as unknown as TF.CreateSessionRequest,
+          { agent: { spec: buildSpec(this.def, this.currentModel(), this.mcpName, this.modelParams()[this.currentModel()] ?? {}) }, metadata: { client: "forgepilot", mode: this.def.name } } as unknown as TF.CreateSessionRequest,
         );
         this.sessionId = res.data.id;
         break;
@@ -148,7 +149,7 @@ export class SessionRunner {
 
   private async switchModel(index: number): Promise<void> {
     this.modelIndex = index;
-    await this.client.sessions.update(this.sessionId!, { agent: { spec: buildSpec(this.def, this.currentModel(), this.mcpName) } });
+    await this.client.sessions.update(this.sessionId!, { agent: { spec: buildSpec(this.def, this.currentModel(), this.mcpName, this.modelParams()[this.currentModel()] ?? {}) } });
   }
 
   async run(input: string, h: RunHandlers): Promise<RunResult> {

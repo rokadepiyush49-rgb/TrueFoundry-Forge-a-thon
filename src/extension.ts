@@ -105,6 +105,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<ForgePilot
     models: () => cfg().get<string[]>("models") || [],
     retry: () => ({ maxAttempts: cfg().get<number>("retry.maxAttempts") ?? 2, baseDelayMs: cfg().get<number>("retry.baseDelayMs") ?? 600 }),
     budget: () => cfg().get<number>("context.budgetTokens") ?? 6000,
+    modelParams: () => cfg().get<Record<string, Record<string, unknown>>>("modelParams") ?? {},
     fs: new VsCodeFilePort(),
     agentDef: loadDef(ctx, "forgepilot.agent.json"),
     inlineDef: loadDef(ctx, "inline-edit.agent.json"),

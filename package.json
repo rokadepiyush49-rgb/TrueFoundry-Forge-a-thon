@@ -138,6 +138,15 @@
           "type": "number",
           "default": 0,
           "description": "Port for the editor MCP server (0 = pick a free port)."
+        },
+        "forgepilot.modelParams": {
+          "type": "object",
+          "default": {
+            "groq/gpt-oss-120b": {
+              "reasoning_format": "hidden"
+            }
+          },
+          "description": "Extra request parameters per model (forwarded by TrueForge to the provider). The default hides gpt-oss reasoning on Groq, whose API rejects reasoning echoed back in multi-turn history."
         }
       }
     },

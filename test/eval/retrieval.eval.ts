@@ -104,7 +104,10 @@ function metrics(rankings: string[][]) {
   const lexical: string[][] = [];
   let tokens = 0;
   for (const c of CASES) {
-    const rep = retrieve(index, c.q, { budget });
+    const pointerMode = process.argv.includes("--pointers");
+    const rep = pointerMode
+      ? retrieve(index, c.q, { budget: 2500, includeCode: false, maxPointers: Number(process.env.MAX_POINTERS || 10) })
+      : retrieve(index, c.q, { budget });
     const ordered = [...rep.selected].sort((a, b) => b.score - a.score).map((s) => s.path);
     hybrid.push(ordered);
     tokens += rep.used;

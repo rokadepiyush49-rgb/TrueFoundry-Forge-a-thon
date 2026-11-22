@@ -40,6 +40,8 @@ export interface RetrieveOptions {
   maxFiles?: number;
   /** When false, only outlines/pointers are returned (cheap "context pack"). */
   includeCode?: boolean;
+  /** Maximum one-line pointers (default 10). */
+  maxPointers?: number;
 }
 
 /**
@@ -204,7 +206,7 @@ export function retrieve(index: ContextIndex, query: string, opts: RetrieveOptio
   // 6. budget packing: depth (code) for the best files, breadth (one-line
   //    pointers) for the rest, so the agent knows every candidate exists.
   const maxFiles = opts.maxFiles ?? 12;
-  const maxPointers = 10;
+  const maxPointers = opts.maxPointers ?? 10;
   const includeCode = opts.includeCode ?? true;
   const codeBudget = Math.floor(opts.budget * (1 - POINTER_RESERVE));
   const selected: SelectedFile[] = [];

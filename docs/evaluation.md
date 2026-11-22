@@ -57,6 +57,21 @@ is different:
 4. **Depth and breadth**: code for the best files, one-line pointers for the
    rest, so the agent knows a candidate exists and can `read_file` it.
 
+### The automatic context card (pointer mode)
+
+At the start of every agent request ForgePilot attaches a pointer-only pack
+(paths and evidence, no code). Evaluated separately with
+`--pointers` (budget 2,500):
+
+| Pointers | Dev recall | Held-out recall | Validation recall |
+|---|---|---|---|
+| 10 | 89% | 96% | 92% |
+| 16 | 98% | 100% | 100% |
+| **20 (shipped)** | **100%** | **100%** | **100%** |
+
+With 10 pointers Task B's `src/flask/cli.py` fell off the card during a
+real-model rehearsal; 20 pointers cost about 500 tokens.
+
 ### Threats to validity
 
 * 38 queries on one repository, labelled by us. Treat the numbers as a sanity
