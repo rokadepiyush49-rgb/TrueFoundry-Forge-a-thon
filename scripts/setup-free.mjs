@@ -66,6 +66,7 @@ function askHidden(question) {
   return new Promise((resolve) => {
     const stdin = process.stdin;
     let buf = "";
+    let warnedEmpty = false;
     stdin.setEncoding("utf8");
     stdin.resume();
     const done = (value) => {
@@ -77,7 +78,16 @@ function askHidden(question) {
     const onData = (chunk) => {
       const text = chunk.replace(/\x1b\[20[01]~/g, "").replace(/\x1b\[[0-9;]*[A-Za-z~]/g, "");
       for (const ch of text) {
-        if (ch === "\r" || ch === "\n") return done(buf);
+        if (ch === "\r" || ch === "\n") {
+          // An Enter before anything was pasted is easy to hit by accident:
+          // ask once more instead of skipping straight away.
+          if (!buf.trim() && !warnedEmpty) {
+            warnedEmpty = true;
+            process.stdout.write("\n  Nothing pasted yet. Paste the key (Cmd+V) and press Enter, or press Enter again to skip: ");
+            continue;
+          }
+          return done(buf);
+        }
         if (ch === "\u0003") {
           process.stdout.write("\n");
           process.exit(130); // the exit handler restores the terminal
@@ -160,7 +170,8 @@ try {
   process.exit(1);
 }
 
-console.log("ForgePilot free model setup. Keys go only to your local TrueForge; nothing is saved to disk.\n");
+console.log("ForgePilot free model setup. Keys go only to your local TrueForge; nothing is saved to disk.");
+console.log("Paste each key with Cmd+V when asked (it shows as ****), then press Enter. Never paste a key at the shell prompt.\n");
 const registered = [];
 for (const p of providers) {
   const key = await askHidden(`Paste your ${p.label} (Enter to skip): `);

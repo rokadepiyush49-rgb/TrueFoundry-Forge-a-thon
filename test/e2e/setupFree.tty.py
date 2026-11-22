@@ -31,6 +31,8 @@ os.write(fd, b"\x7f\x7fXY")   # two backspaces then XY -> "abcdXY"
 time.sleep(0.2)
 os.write(fd, b"\r")
 out2 = read_until(fd, b"second secret (Enter to skip): ")
+os.write(fd, b"\r")  # accidental Enter before pasting: must NOT skip
+out2 += read_until(fd, b"press Enter again to skip: ")
 os.write(fd, b"\x1b[200~gsk-pasted-value-123\x1b[201~")  # bracketed paste
 time.sleep(0.2)
 os.write(fd, b"\r")
@@ -43,6 +45,7 @@ checks = {
     "input masked (no plaintext)": "abcd" not in screen and "gsk-pasted" not in screen and "XY" not in screen,
     "backspace handled": "received 6 characters" in screen,
     "bracketed paste read": "received 20 characters" in screen,
+    "accidental Enter asks again": "Nothing pasted yet" in screen,
 }
 for k, v in checks.items():
     print(("PASS " if v else "FAIL ") + k)
