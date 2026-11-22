@@ -342,10 +342,10 @@ What actually worked in our rehearsals (November 2026):
 |---|---|---|---|
 | `groq/gpt-oss-120b` | Groq free | **works** (Task A verifier 10/10 in 3.3 s) | no: Groq rejects the reasoning history TrueForge sends back on the second call, and the free plan allows ~8K tokens/min |
 | `google-gemini/gemini-3-5-flash-lite` | Gemini free | — | depends on your Google project; ours returned 403 "free tier not available for this project" |
-| `anthropic/claude-haiku-5-5` | paid (cents per run) | works | used for Task B |
+| `anthropic/claude-haiku-5-5` | paid (cents per run) | not yet rehearsed | planned for Task B; not yet rehearsed |
 | local model via Ollama (`http://127.0.0.1:11434/v1`) | free, on the laptop | fine | slow on a 16 GB laptop |
 
-So a free model (Groq) covers Tasks A and C, including Task C's fallback. Task B in our recording used a paid model.
+So a free model (Groq) covers Tasks A and C, including Task C's fallback. Task B needs a model that handles multi-turn tool use through TrueForge with larger requests.
 
 Free tiers also rate-limit mid-run, and ForgePilot handles both kinds of limit:
 
