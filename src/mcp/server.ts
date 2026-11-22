@@ -162,7 +162,7 @@ export function buildMcpServer(host: ToolHost): McpServer {
     {
       title: "Run a terminal command",
       description:
-        "Run a shell command in the workspace root (for example tests). Requires the user's approval. Output is truncated; prefer targeted test selections.",
+        "Run a shell command (for example tests). It already runs in the workspace root, so do not cd into other directories or guess absolute paths. Requires the user's approval. Output is truncated; prefer targeted test selections.",
       inputSchema: {
         command: z.string(),
         timeout_seconds: z.number().int().optional(),

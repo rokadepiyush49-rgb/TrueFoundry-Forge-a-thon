@@ -53,7 +53,8 @@ const core = new ForgeCore({
       setTimeout(() => core.review.decideAll(p.id, "accepted"), 10);
     },
     confirmCommand: async (c) => {
-      const ok = /^(\S*python\S*\s+-m\s+)?(pytest|flask)\b/.test(c.trim());
+      // like a user approving test runs: any pytest/flask invocation
+      const ok = /(^|[\s;&|])(\S*python\S*\s+-m\s+)?(pytest|flask)\b/.test(c.trim()) && !/\brm\b|>\s*\//.test(c);
       console.log(`${stamp()} COMMAND ${ok ? "allowed" : "DENIED"}: ${c}`);
       return ok;
     },

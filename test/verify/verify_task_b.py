@@ -52,22 +52,32 @@ def flask_cli(args, cwd, app_src):
     return run([sys.executable, "-m", "flask", *args], cwd=cwd, env=env)
 
 
+def _test_ids(source: str, path: str) -> set[str]:
+    """pytest node ids of test functions, including methods of Test* classes."""
+    import ast
+
+    ids: set[str] = set()
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return ids
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith("test"):
+            ids.add(f"{path}::{node.name}")
+        elif isinstance(node, ast.ClassDef) and node.name.startswith("Test"):
+            for sub in node.body:
+                if isinstance(sub, (ast.FunctionDef, ast.AsyncFunctionDef)) and sub.name.startswith("test"):
+                    ids.add(f"{path}::{node.name}::{sub.name}")
+    return ids
+
+
 def new_test_ids(repo: str) -> list[str]:
-    """Test functions added to tests/ since the pristine commit."""
-    ids = []
-    diff = git("diff", PRISTINE, "--", "tests", cwd=repo)
-    current = None
-    for line in diff.splitlines():
-        if line.startswith("+++ b/"):
-            current = line[6:]
-        m = re.match(r"^\+\s*def (test_\w+)\(", line)
-        if m and current:
-            ids.append(f"{current}::{m.group(1)}")
+    """Tests that exist now but not in pristine 3.1.3 (module-level or in classes)."""
+    ids: list[str] = []
     for f in changed_files(repo):
-        if f.startswith("tests/") and f.endswith(".py") and git("ls-files", f, cwd=repo).strip() == "":
-            for m in re.finditer(r"^\s*def (test_\w+)\(", Path(repo, f).read_text(), re.M):
-                ids.append(f"{f}::{m.group(1)}")
-    # methods inside classes are addressed by pytest -k instead of node ids
+        if f.startswith("tests/") and f.endswith(".py") and Path(repo, f).exists():
+            before = _test_ids(git("show", f"{PRISTINE}:{f}", cwd=repo), f)
+            ids.extend(sorted(_test_ids(Path(repo, f).read_text(), f) - before))
     return ids
 
 
@@ -153,7 +163,8 @@ def main() -> int:
                 elif p.exists():
                     p.unlink()
             mcode, mfails, mtail = pytest_failures([*added], repo)
-            rep.check("mutation check: new tests FAIL when the implementation is removed", mcode != 0, f"with the feature reverted: {mtail.splitlines()[-1] if mtail else ''}")
+            # exit code 5 = no tests collected: inconclusive, which must not count as a pass
+            rep.check("mutation check: new tests FAIL when the implementation is removed", mcode not in (0, 5), f"with the feature reverted: {mtail.splitlines()[-1] if mtail else ''}")
         finally:
             for f, content in backups.items():
                 p = Path(repo, f)
