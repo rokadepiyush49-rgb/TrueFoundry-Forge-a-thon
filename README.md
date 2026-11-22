@@ -205,6 +205,14 @@ ForgePilot's MCP server and any local models run on `127.0.0.1`, which TrueForge
 OUTBOUND_URL_ALLOWED_HOSTS='["localhost","127.0.0.1"]' MODEL_HTTP_MAX_RETRIES=0 npx @truefoundry/trueforge@latest
 ```
 
+If you use NVIDIA's free API, add its host too:
+
+```bash
+OUTBOUND_URL_ALLOWED_HOSTS='["localhost","127.0.0.1","integrate.api.nvidia.com"]' MODEL_HTTP_MAX_RETRIES=0 npx @truefoundry/trueforge@latest
+```
+
+This matters on NAT64 networks, which are common on Indian ISPs. There, IPv4-only APIs resolve to `64:ff9b::` addresses, and TrueForge's SSRF guard blocks that range as private.
+
 TrueForge serves its UI and API at <http://localhost:8790>. `MODEL_HTTP_MAX_RETRIES=0` hands retries to ForgePilot, which decides between retry and fallback; it is optional.
 
 ### 2. Configure models in TrueForge

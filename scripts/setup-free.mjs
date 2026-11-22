@@ -178,7 +178,15 @@ for (const p of providers) {
     console.log(result + "\n");
     if (result === "works") registered.push(p.test);
   } catch (e) {
-    console.log(`  could not register: ${e.message}\n`);
+    const body = JSON.stringify(e.body ?? "");
+    if (/Outbound URL blocked/.test(body)) {
+      const host = (body.match(/host \\?"([^"\\]+)/) || [])[1] || "the provider";
+      console.log(`  TrueForge blocked ${host}. On NAT64 networks (common on Indian ISPs) IPv4-only APIs resolve to 64:ff9b:: addresses,`);
+      console.log(`  which TrueForge's SSRF guard treats as private. Restart TrueForge with the host allowlisted, then run this again:`);
+      console.log(`    OUTBOUND_URL_ALLOWED_HOSTS='["localhost","127.0.0.1","${host}"]' npx @truefoundry/trueforge@latest\n`);
+    } else {
+      console.log(`  could not register: ${e.message}\n`);
+    }
   }
 }
 
