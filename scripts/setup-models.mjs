@@ -9,6 +9,7 @@ import { readFileSync, existsSync } from "fs";
 import { fileURLToPath } from "url";
 import path from "path";
 import { TrueForge } from "@truefoundry/trueforge-sdk";
+import { providerManifest, providerId } from "./providers.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const localPath = path.join(root, "config/models.local.json");
@@ -28,9 +29,10 @@ if (process.argv.includes("--broken-primary")) {
       { name: "unreachable", modelId: "unreachable", properties: { contextLength: 32000 } },
     ],
   });
-  const first = cfg.providers.find((p) => p.enabled !== false && (p.type === "openai" || p.type === "google-gemini" || p.type === "anthropic"));
-  if (first) {
-    providers.push({ ...first, name: "badkey", auth: { apiKey: "invalid-key-for-task-c" } });
+  {
+    // a custom (OpenAI-compatible) provider can carry its own name, so the bad
+    // key never overwrites the working provider's stored key
+    providers.push({ enabled: true, name: "badkey", type: "custom", baseUrl: "https://api.groq.com/openai/v1", auth: { apiKey: "invalid-key-for-task-c" }, models: [{ name: "gpt-oss-120b", modelId: "openai/gpt-oss-120b", properties: { contextLength: 131072 } }] });
   }
 }
 
@@ -44,13 +46,14 @@ for (const p of providers) {
     console.log(`skip ${p.name}: placeholder key (edit ${path.relative(root, localPath)})`);
     continue;
   }
-  const { name, enabled: _enabled, ...manifest } = p;
+  const manifest = providerManifest(p);
+  const id = providerId(manifest);
   try {
-    await client.settings.modelProviders.createOrUpdate({ manifest: { name, ...manifest } });
-    console.log(`registered ${name}: ${p.models.map((m) => `${name}/${m.name}`).join(", ")}`);
+    await client.settings.modelProviders.createOrUpdate({ manifest });
+    console.log(`registered ${id}: ${p.models.map((m) => `${id}/${m.name}`).join(", ")}`);
   } catch (e) {
     failed++;
-    console.error(`failed ${name}: ${e.message} ${e.body ? JSON.stringify(e.body).slice(0, 300) : ""}`);
+    console.error(`failed ${id}: ${e.message} ${e.body ? JSON.stringify(e.body).slice(0, 300) : ""}`);
   }
 }
 const models = await client.models.list();

@@ -103,6 +103,13 @@ export async function startMockModel(): Promise<MockModel> {
       req.on("close", () => clearInterval(t));
       return;
     }
+    if (base === "truncate") {
+      // a reasoning model that runs out of tokens before answering
+      res.write(chunk(model, { role: "assistant", content: "Let me think" }));
+      res.write(chunk(model, {}, "length"));
+      res.end("data: [DONE]\n\n");
+      return;
+    }
     const steps = scripts.get(base) || scripts.get(model) || scripts.get("scripted") || [{ text: "No script." }];
     const step = steps[Math.min(toolMsgs, steps.length - 1)];
     if ("text" in step) {

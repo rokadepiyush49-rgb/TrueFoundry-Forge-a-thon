@@ -1,5 +1,5 @@
 {
-  "$comment": "Copy to config/models.local.json (git-ignored), put real keys there and set enabled: true on the providers you use, then run: npm run setup:models. The first three are FREE (no card). Model ids match TrueForge's built-in catalog (Nov 2026). Gemini must use type google-gemini, not custom (TrueForge issue #1385). Keys stay in your local TrueForge; ForgePilot never calls a provider directly.",
+  "$comment": "Copy to config/models.local.json (git-ignored), put real keys there and set enabled: true on the providers you use, then run: npm run setup:models. The first three are FREE (no card). Model ids match TrueForge's built-in catalog (Nov 2026). Gemini must use type google-gemini, not custom (TrueForge issue #1385). Built-in types are named after the type, so models are google-gemini/<name>, openai/<name>, anthropic/<name>; only custom providers use the name field. Keys stay in your local TrueForge; ForgePilot never calls a provider directly.",
   "trueforgeUrl": "http://localhost:8790",
   "providers": [
     {
@@ -98,7 +98,7 @@
     }
   ],
   "forgepilotModels": [
-    "gemini/gemini-3-5-flash-lite",
+    "google-gemini/gemini-3-5-flash-lite",
     "groq/gpt-oss-120b"
   ]
 }

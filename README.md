@@ -243,7 +243,7 @@ Then either:
 Run **ForgePilot: Choose Models** from the command palette and pick the models TrueForge offers, primary first. Or set `forgepilot.models` in your user settings:
 
 ```json
-"forgepilot.models": ["gemini/gemini-3-5-flash-lite", "groq/gpt-oss-120b"]
+"forgepilot.models": ["google-gemini/gemini-3-5-flash-lite", "groq/gpt-oss-120b"]
 ```
 
 The first is primary; the others are automatic fallbacks.
@@ -326,7 +326,7 @@ The brief accepts "a provider's free tier" or "an open-source model running on y
 
 | Role | Model | Free tier |
 |---|---|---|
-| Primary (Tasks A and B) | `gemini/gemini-3-5-flash-lite` (type `google-gemini`) | Gemini API free tier, no card; check your live limits at aistudio.google.com/rate-limit |
+| Primary (Tasks A and B) | `google-gemini/gemini-3-5-flash-lite` | Gemini API free tier, no card; check your live limits at aistudio.google.com/rate-limit |
 | Fallback (Task C) | `groq/gpt-oss-120b` (type `custom`, `https://api.groq.com/openai/v1`) | Groq free plan; ~8K tokens/min is too small for agent mode but ample for inline edits, which is all Task C needs |
 | Optional, unlimited | a 7-8B coder model in Ollama (`http://127.0.0.1:11434/v1`) | runs on the laptop; fine for inline edit, slow for agent mode |
 

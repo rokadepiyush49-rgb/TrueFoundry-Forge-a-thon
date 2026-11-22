@@ -6,6 +6,7 @@
 // checks each model with a one-line request through TrueForge.
 import readline from "readline";
 import { TrueForge } from "@truefoundry/trueforge-sdk";
+import { FREE_PROVIDERS, providerId } from "./providers.mjs";
 
 const url = process.env.TRUEFORGE_URL || "http://localhost:8790";
 const client = new TrueForge({ baseUrl: url, timeoutInSeconds: 120 });
@@ -50,7 +51,7 @@ if (!process.stdin.isTTY) {
  * or pasted character shows as "*". Backspace and Ctrl-C work; bracketed-paste
  * markers some terminals add are stripped.
  */
-function askHidden(question) {
+function askHidden(question, { emptyMeansKeep = false } = {}) {
   process.stdout.write(question);
   if (pipedLines) {
     if (pipedLines.queue.length) {
@@ -81,7 +82,7 @@ function askHidden(question) {
         if (ch === "\r" || ch === "\n") {
           // An Enter before anything was pasted is easy to hit by accident:
           // ask once more instead of skipping straight away.
-          if (!buf.trim() && !warnedEmpty) {
+          if (!buf.trim() && !warnedEmpty && !emptyMeansKeep) {
             warnedEmpty = true;
             process.stdout.write("\n  Nothing pasted yet. Paste the key (Cmd+V) and press Enter, or press Enter again to skip: ");
             continue;
@@ -112,7 +113,8 @@ function askHidden(question) {
 async function check(model) {
   try {
     const session = await client.sessions.create({
-      agent: { spec: { model: { name: model, params: { maxTokens: 20 } }, instructions: "Reply with exactly: OK" } },
+      // Reasoning models spend tokens thinking before answering, so leave room.
+      agent: { spec: { model: { name: model, params: { maxTokens: 1024 } }, instructions: "Reply with exactly: OK" } },
     });
     const turn = await client.sessions.createTurn(session.data.id, { input: [{ type: "user.message", content: "Say OK." }] });
     let state = turn.data.state;
@@ -121,38 +123,18 @@ async function check(model) {
       state = (await client.sessions.getTurn(session.data.id, turn.data.id)).data.state;
     }
     await client.sessions.delete(session.data.id).catch(() => undefined);
-    return state.status === "done" ? "works" : `failed: ${state.message || state.status}`;
+    if (state.status === "done") return "works";
+    // A reply cut off by the token limit still proves the key and model work.
+    if (/truncat|token limit|max_tokens|length/i.test(state.message || "")) return "works";
+    return `failed: ${state.message || state.status}`;
   } catch (e) {
     return `failed: ${e.message}`;
   }
 }
 
-const providers = process.env.FORGEPILOT_SETUP_SELFTEST ? JSON.parse(process.env.FORGEPILOT_SETUP_SELFTEST).map((p) => ({ label: p.label, manifest: (key) => ({ ...p.manifest, auth: { apiKey: key } }), test: p.test })) : [
-  {
-    label: "Gemini (free key from https://aistudio.google.com/apikey)",
-    manifest: (key) => ({
-      name: "gemini",
-      type: "google-gemini",
-      auth: { apiKey: key },
-      models: [
-        { name: "gemini-3-5-flash-lite", modelId: "gemini-3.5-flash-lite", properties: { contextLength: 1048576 } },
-        { name: "gemini-3-8-flash", modelId: "gemini-3.8-flash", properties: { contextLength: 1048576 } },
-      ],
-    }),
-    test: "gemini/gemini-3-5-flash-lite",
-  },
-  {
-    label: "Groq (free key from https://console.groq.com/keys)",
-    manifest: (key) => ({
-      name: "groq",
-      type: "custom",
-      baseUrl: "https://api.groq.com/openai/v1",
-      auth: { apiKey: key },
-      models: [{ name: "gpt-oss-120b", modelId: "openai/gpt-oss-120b", properties: { contextLength: 131072 } }],
-    }),
-    test: "groq/gpt-oss-120b",
-  },
-];
+const providers = process.env.FORGEPILOT_SETUP_SELFTEST
+  ? JSON.parse(process.env.FORGEPILOT_SETUP_SELFTEST).map((p) => ({ id: p.manifest.name, label: p.label, manifest: (key) => ({ ...p.manifest, auth: { apiKey: key } }), test: p.test }))
+  : FREE_PROVIDERS;
 
 if (DRY_RUN) {
   // Exercise the prompts only: report what was received, contact nothing.
@@ -172,16 +154,26 @@ try {
 
 console.log("ForgePilot free model setup. Keys go only to your local TrueForge; nothing is saved to disk.");
 console.log("Paste each key with Cmd+V when asked (it shows as ****), then press Enter. Never paste a key at the shell prompt.\n");
+const existing = new Set(((await client.settings.modelProviders.list()).data || []).map((p) => p.name));
 const registered = [];
 for (const p of providers) {
-  const key = await askHidden(`Paste your ${p.label} (Enter to skip): `);
-  if (!key) {
+  const have = existing.has(p.id);
+  const key = await askHidden(
+    have ? `${p.label} is already set up. Paste a new key to replace it, or press Enter to keep it: ` : `Paste your ${p.label} (Enter to skip): `,
+    { emptyMeansKeep: have },
+  );
+  if (!key && !have) {
     console.log("  skipped\n");
     continue;
   }
   try {
-    await client.settings.modelProviders.createOrUpdate({ manifest: p.manifest(key) });
-    process.stdout.write("  registered; checking with a one-line request... ");
+    if (key) {
+      const manifest = p.manifest(key);
+      await client.settings.modelProviders.createOrUpdate({ manifest });
+      process.stdout.write(`  registered as ${providerId(manifest)}; checking with a one-line request... `);
+    } else {
+      process.stdout.write("  keeping the existing key; checking with a one-line request... ");
+    }
     const result = await check(p.test);
     console.log(result + "\n");
     if (result === "works") registered.push(p.test);
