@@ -134,7 +134,11 @@ async function check(model) {
 
 const providers = process.env.FORGEPILOT_SETUP_SELFTEST
   ? JSON.parse(process.env.FORGEPILOT_SETUP_SELFTEST).map((p) => ({ id: p.manifest.name, label: p.label, manifest: (key) => ({ ...p.manifest, auth: { apiKey: key } }), test: p.test }))
-  : FREE_PROVIDERS;
+  : FREE_PROVIDERS.filter((p) => {
+      // `npm run setup:free -- nvidia groq` asks only for the named providers
+      const only = process.argv.slice(2).filter((a) => !a.startsWith("--"));
+      return only.length === 0 || only.includes(p.id);
+    });
 
 if (DRY_RUN) {
   // Exercise the prompts only: report what was received, contact nothing.
