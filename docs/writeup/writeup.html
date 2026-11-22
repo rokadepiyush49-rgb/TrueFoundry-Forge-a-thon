@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ForgePilot — Technical Write-up</title>
+<style>
+  @page { size: A4; margin: 0; }
+  :root { --navy: #0e2a47; --sky: #9fd3f0; --ink: #111; --muted: #444; --rule: #222; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: Verdana, "DejaVu Sans", Geneva, sans-serif; font-size: 8.3pt; line-height: 1.33; color: var(--ink); background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* Repeating header and footer bands, in the style of the Techfest brief */
+  .band-top { position: fixed; top: 0; left: 0; right: 0; height: 19mm; display: flex; }
+  .band-top .left { flex: 0 0 52%; background: var(--navy); color: #fff; padding: 3.2mm 6mm; clip-path: polygon(0 0, 100% 0, 92% 100%, 0 100%); }
+  .band-top .left .brand { font-size: 16pt; font-weight: bold; font-style: italic; letter-spacing: 0.3px; line-height: 1; }
+  .band-top .left .tag { font-size: 6.4pt; font-style: italic; opacity: 0.9; margin-top: 1.2mm; }
+  .band-top .right { flex: 1; background: var(--sky); margin-left: -6%; clip-path: polygon(8% 0, 100% 0, 100% 100%, 0 100%); display: flex; align-items: center; justify-content: flex-end; padding-right: 8mm; color: var(--navy); font-weight: bold; font-size: 14pt; font-family: Georgia, "Times New Roman", serif; }
+  .band-top::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1.6mm; height: 1.6mm; background: linear-gradient(90deg, var(--navy) 60%, #5aa9d6 100%); opacity: 0.85; }
+  .band-bottom { position: fixed; bottom: 0; left: 0; right: 0; height: 12mm; display: flex; }
+  .band-bottom .left { flex: 0 0 64%; background: var(--navy); color: #fff; font-family: Georgia, "Times New Roman", serif; font-weight: bold; font-size: 8.2pt; padding: 2.2mm 6mm; line-height: 1.25; clip-path: polygon(0 0, 96% 0, 100% 100%, 0 100%); }
+  .band-bottom .right { flex: 1; background: var(--sky); color: var(--navy); font-family: Georgia, "Times New Roman", serif; font-weight: bold; font-size: 10pt; display: flex; align-items: center; justify-content: center; margin-left: -2%; clip-path: polygon(4% 0, 100% 0, 100% 100%, 0 100%); }
+
+  /* Page flow: repeating thead/tfoot spacers keep text clear of the bands */
+  table.page { width: 100%; border-collapse: collapse; }
+  table.page > thead td { height: 24mm; padding: 0; }
+  table.page > tfoot td { height: 16mm; padding: 0; }
+  table.page > tbody > tr > td { padding: 0 13mm; vertical-align: top; }
+
+  h1 { text-align: center; font-size: 13.5pt; margin: 0 0 1mm; text-decoration: underline; text-underline-offset: 2px; }
+  .subtitle { text-align: center; font-size: 8.4pt; color: var(--muted); margin-bottom: 2.6mm; }
+  .subtitle a { color: #1a55a3; }
+  h2 { font-size: 10pt; margin: 3.2mm 0 1.2mm; color: var(--navy); border-bottom: 1.2px solid var(--navy); padding-bottom: 0.6mm; break-after: avoid; }
+  h3 { font-size: 8.8pt; margin: 2mm 0 0.8mm; break-after: avoid; }
+  p { margin: 0 0 1.4mm; }
+  ul { margin: 0 0 1.4mm; padding-left: 4.5mm; }
+  li { margin: 0 0 0.6mm; }
+  code { font-family: Menlo, Consolas, monospace; font-size: 7.8pt; background: #eef4f9; padding: 0 2px; border-radius: 2px; }
+  table.data { width: 100%; border-collapse: collapse; margin: 1mm 0 2mm; font-size: 7.9pt; break-inside: avoid; }
+  table.data th, table.data td { border: 0.8px solid var(--rule); padding: 1mm 1.6mm; text-align: left; vertical-align: top; }
+  table.data th { background: #e3f1fa; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; }
+  .fig { break-inside: avoid; border: 0.8px solid #b9d7ea; border-radius: 3px; padding: 1.5mm; margin: 1mm 0 2mm; background: #fbfdff; }
+  .fig .cap { font-size: 7.2pt; color: var(--muted); margin-top: 0.8mm; text-align: center; }
+  .fig .mermaid { display: flex; justify-content: center; }
+  .fig svg { max-width: 100%; height: auto; }
+  .k { font-weight: bold; color: var(--navy); }
+  .todo { background: #fff3b0; padding: 0 2px; }
+  .metric { display: inline-block; border: 0.8px solid var(--navy); border-radius: 3px; padding: 0.3mm 1.6mm; margin: 0 1mm 1mm 0; font-size: 7.6pt; }
+</style>
+</head>
+<body>
+<div class="band-top"><div class="left"><div class="brand">Techfest</div><div class="tag">TrueFoundry Forge-a-thon · Round 1 submission</div></div><div class="right">Techfest, IIT Bombay</div></div>
+<div class="band-bottom"><div class="left">ForgePilot · github.com/rokadepiyush49-rgb/TrueFoundry-Forge-a-thon<br>Techfest 2026-27 · TrueFoundry Forge-a-thon</div><div class="right">www.techfest.org</div></div>
+
+<table class="page">
+<thead><tr><td></td></tr></thead>
+<tfoot><tr><td></td></tr></tfoot>
+<tbody><tr><td>
+
+<h1>ForgePilot — Technical Write-up</h1>
+<div class="subtitle">An editor-native coding agent for VS Code whose agent loop runs on TrueForge ·
+<a href="https://github.com/rokadepiyush49-rgb/TrueFoundry-Forge-a-thon">github.com/rokadepiyush49-rgb/TrueFoundry-Forge-a-thon</a> · Demo video: <span class="todo">{{VIDEO_URL}}</span></div>
+
+<h2>1. Team</h2>
+<table class="data">
+<tr><th>Member</th><th>College / employer</th><th>GitHub</th></tr>
+{{TEAM_ROWS}}
+</table>
+
+<h2>2. Starting point</h2>
+<p><span class="k">From scratch</span> — no upstream editor project was forked. Runtime dependencies: <code>@truefoundry/trueforge-sdk</code> 0.185.0, <code>@modelcontextprotocol/sdk</code>, <code>diff</code>, <code>zod</code>. Built and tested against TrueForge 0.185.1 in local mode.</p>
+
+<h2>3. Architecture on TrueForge</h2>
+<div class="fig"><pre class="mermaid">
+flowchart LR
+  subgraph VS["VS Code · ForgePilot = TrueForge client"]
+    direction TB
+    UI["Panel · Context Inspector<br/>per-hunk diff review"]
+    RUN["Session runners<br/>agent · inline"]
+    BRK["Approval broker<br/>checks → hunk review"]
+    MCP["MCP server · editor tools<br/>read · search · retrieve<br/>propose_edit · run_command"]
+  end
+  subgraph TF["TrueForge · local mode"]
+    direction TB
+    LOOP["Agent loop · sessions<br/>SSE streaming"]
+    APR["Tool approvals"]
+    CE["Sub-agents · deferred tools<br/>compaction"]
+  end
+  LLM[("Models<br/>primary → fallback")]
+  UI --- RUN
+  RUN -- "SDK: sessions, turns" --> LOOP
+  LOOP -- "SSE events" --> RUN
+  APR -- "approval_required" --> BRK
+  BRK -- "allow / deny" --> APR
+  LOOP -- "MCP tool calls" --> MCP
+  LOOP --> LLM
+</pre><div class="cap">Figure 1 — The extension is a TrueForge client; editor capabilities are MCP tools that TrueForge calls. The extension never calls a model provider.</div></div>
+
+<ul>
+<li><span class="k">Client, not loop.</span> Sessions and turns go through the TypeScript SDK (<code>sessions.create</code>, <code>createTurnStream</code>), and approvals are answered with <code>createTurnEvents</code>. Inline edit and agent mode each have their own session (a new turn cancels a running one). Sessions use an <i>inline</i> AgentSpec built from <code>agents/*.agent.json</code>, which lets <code>sessions.update</code> switch the model in place.</li>
+<li><span class="k">Editor capabilities as MCP tools.</span> A Streamable-HTTP MCP server on 127.0.0.1, behind a random bearer token, is registered per workspace and removed on exit. Write tools (<code>propose_edit</code>, <code>propose_new_file</code>, <code>run_command</code>) are in <code>require_approval_for_tools</code>.</li>
+<li><span class="k">Approval drives the review.</span> On <code>tool.approval_required</code>, ForgePilot rebuilds the call from the streamed deltas and runs hard checks: each anchor matches exactly once, the Python result parses, and imported repo symbols exist. A failed check is denied back to the agent with the reason and the nearest matching text. Otherwise the edit opens as a per-hunk review, and <code>allow</code> is sent once every hunk has a decision. The MCP handler writes <b>only accepted hunks</b>, in one write, and refuses any call that did not pass review.</li>
+<li><span class="k">Harness features.</span>
+  <ul>
+  <li><b>Dynamic sub-agents:</b> one read-only scout maps where similar features are implemented, tested and documented. Writes from sub-agent threads are denied.</li>
+  <li><b>Deferred tool loading:</b> only reviewed tools are preloaded.</li>
+  <li><b>Compaction:</b> triggers at 40k tokens.</li>
+  <li><b>Disabled:</b> ask-user and generative-UI tools, which the panel never renders.</li>
+  </ul></li>
+</ul>
+
+<div class="fig"><pre class="mermaid">
+flowchart LR
+  A["model calls<br/>propose_edit"] --> B["TrueForge<br/>approval_required"]
+  B --> C{"anchor · syntax<br/>· symbol checks"}
+  C -- fail --> D["deny + reason<br/>agent corrects itself"]
+  C -- pass --> E["per-hunk review<br/>Accept / Reject"]
+  E -- "≥1 accepted" --> F["allow → MCP writes<br/>only accepted hunks"]
+  E -- "all rejected" --> D
+</pre><div class="cap">Figure 2 — TrueForge's tool approval gates the hunk review; nothing reaches disk before a decision, and impossible edits never reach the user.</div></div>
+
+<p><span class="k">Resilience (Task C).</span> TrueForge has no built-in model fallback, so ForgePilot classifies each failure:</p>
+<ul>
+<li><b>Transient</b> (network, 5xx, timeout): exponential backoff.</li>
+<li><b>Per-minute rate limit:</b> waits the provider's suggested delay.</li>
+<li><b>Permanent</b> (bad key, unknown model, daily quota): not retried.</li>
+</ul>
+<p>It then calls <code>sessions.update</code> to move the <b>same session</b> to the next model, keeping history. If edits were already applied, it <i>continues</i> rather than replays. <span class="k">Cancel</span> aborts locally, calls <code>sessions.cancel</code>, discards open reviews and kills agent commands, because TrueForge waits for in-flight MCP calls.</p>
+
+<h2>4. How context is selected</h2>
+<div class="fig"><pre class="mermaid">
+flowchart LR
+  Q["request +<br/>@file/@symbol"] --> B["BM25 over symbol-level chunks<br/>(orders primary files)"]
+  B --> S["supporting evidence<br/>named symbols · test/doc companions<br/>import-graph neighbours"]
+  B --> P
+  S --> P["budget packing<br/>code for best files · pointers for the rest<br/>≤25% per file · most relevant last"]
+  P --> O["context pack + reasons<br/>+ omissions with why"]
+</pre><div class="cap">Figure 3 — Retrieval pipeline. Supporting signals explain choices and add files; they never reorder BM25.</div></div>
+<p>Each agent request starts with an automatic <b>pointer pack</b>: up to 20 paths with evidence, ~500 tokens. <code>retrieve_context</code> returns code within the budget (default 6,000 tokens), and <code>@</code>-mentions are always included. The <b>Context Inspector</b> shows every chosen file with its evidence badges and token cost, the budget bar, and what was left out and why. Low-confidence results are flagged.</p>
+<p><span class="k">Why a budget.</span> More retrieved context lowered SWE-bench resolution as recall rose. Chroma's <i>Context Rot</i> shows focused prompts beating long ones on all 18 models tested. <i>Agent Retrieval Bench</i> (arXiv:2607.24882) finds no retrieval family dominates.</p>
+<p><span class="k">Measured trade-off</span> (Flask 3.1.3, 38 queries with grep-labelled gold files):</p>
+<ul>
+<li>A weighted-fusion ranker beat BM25 on its dev set (MRR 0.71 vs 0.54) but <b>lost on held-out queries (0.54 vs 0.78)</b>. It overfit, so we reverted to BM25 ordering.</li>
+<li>Shipped: <b>100% recall of the files to change</b> on dev, held-out and a fresh validation set, using ~2% of the repo's tokens.</li>
+<li>For Task B, the companions bring <code>tests/test_cli.py</code> and <code>docs/cli.rst</code> alongside <code>src/flask/cli.py</code>.</li>
+</ul>
+
+<h2>5. Model setup</h2>
+<table class="data">
+<tr><th>Role</th><th>Model (TrueForge FQN)</th><th>Where it ran</th><th>Approx. cost</th></tr>
+{{MODEL_ROWS}}
+</table>
+<p><b>Switching models:</b>
+(1) configure providers in TrueForge, through the UI or <code>npm run setup:free</code> / <code>setup:models</code>;
+(2) run <i>ForgePilot: Choose Models</i> (primary first).
+Nothing is provider-specific. Inline edit is tool-less, so it works on any model. <code>forgepilot.modelParams</code> carries per-provider request quirks.</p>
+
+<h2>6. Scorecard</h2>
+<table class="data">
+<tr><th>Criterion</th><th>Video</th><th>Claim (verifiable on screen)</th></tr>
+<tr><td>A1 Inline edit</td><td>{{T_A1}}</td><td>Diff in the editor with Accept/Reject on every hunk; scope and elision guards</td></tr>
+<tr><td>A2 Agent mode</td><td>{{T_A2}}</td><td>One request; files found unprompted; 3 files edited (<code>cli.py</code>, <code>test_cli.py</code>, <code>cli.rst</code>)</td></tr>
+<tr><td>A3 Streaming + cancel</td><td>{{T_A3}}</td><td>Live tokens; Stop completes in ~10 ms; workspace clean; typing latency 12 ms while streaming</td></tr>
+<tr><td>B1 Context assembly</td><td>{{T_B1}}</td><td>Context Inspector: files, evidence, tokens vs budget, omissions</td></tr>
+<tr><td>B2 Diff safety</td><td>{{T_B2}}</td><td>Per-hunk review gated by TrueForge approval; per-run undo restores <code>git status</code></td></tr>
+<tr><td>B3 Resilience</td><td>{{T_B3}}</td><td>Unreachable primary → retry → automatic fallback on the same session; <code>git status</code> clean</td></tr>
+<tr><td>B4 TrueForge depth</td><td>{{T_B4}}</td><td>MCP tools; approvals drive review; scout sub-agent visible in the TrueForge session</td></tr>
+</table>
+
+<h2>7. Tools used</h2>
+<p><b>Claude Code</b> (Anthropic), an AI coding assistant, was used for research, implementation, tests and docs. Other tools: TrueForge 0.185.1, VS Code, Node 24, TypeScript, esbuild, vitest, <code>@vscode/test-electron</code>, Python 3.14 and pytest 8.4.2.</p>
+<p><b>Evidence:</b>
+<span class="metric">76 unit tests + 3,000 fuzz cases</span>
+<span class="metric">17 end-to-end tests vs real TrueForge</span>
+<span class="metric">5 tests inside real VS Code</span>
+<span class="metric">task verifiers mutation-tested (9 wrong solutions)</span>
+<span class="metric">cancel ≈10 ms · typing 12 ms while streaming</span></p>
+<h2>8. Known limitations and the next month</h2>
+<p><b>Limitations:</b> static checks are Python-only; ranking equals BM25 (38 queries, one repository); through TrueForge's OpenAI-compatible path Groq rejects echoed reasoning history, so Groq reasoning models served inline edit only; a slow third-party MCP tool can delay TrueForge's cancel.</p>
+<p><b>Next month:</b> tree-sitter checks for more languages; a multi-repo retrieval benchmark; running tests on a shadow copy before acceptance; upstream fixes to TrueForge (native model fallback, listed as planned in its docs, and the reasoning-history issue).</p>
+
+</td></tr></tbody>
+</table>
+
+<script src="../../node_modules/mermaid/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: "base",
+    securityLevel: "loose",
+    flowchart: { htmlLabels: true, curve: "basis", nodeSpacing: 18, rankSpacing: 26, padding: 6 },
+    sequence: { mirrorActors: false, actorMargin: 28, messageMargin: 18, boxMargin: 4, noteMargin: 6, height: 30 },
+    themeVariables: {
+      fontFamily: "Verdana, sans-serif", fontSize: "10px",
+      primaryColor: "#e3f1fa", primaryBorderColor: "#0e2a47", primaryTextColor: "#0e2a47",
+      lineColor: "#0e2a47", secondaryColor: "#f3f8fc", tertiaryColor: "#ffffff",
+      clusterBkg: "#f7fbfe", clusterBorder: "#7fb6da", actorBkg: "#e3f1fa", actorBorder: "#0e2a47", signalColor: "#0e2a47"
+    }
+  });
+  mermaid.run({ querySelector: ".mermaid" }).then(() => { document.body.setAttribute("data-rendered", "1"); });
+</script>
+</body>
+</html>

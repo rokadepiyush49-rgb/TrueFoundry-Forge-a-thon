@@ -185,7 +185,8 @@
     "test:vscode": "npm run build && node esbuild.mjs --tests && node out/vscode-test/runTest.js",
     "setup:models": "node scripts/setup-models.mjs",
     "setup:free": "node scripts/setup-free.mjs",
-    "test:setup": "tsx test/e2e/setupFree.selftest.ts && python3 test/e2e/setupFree.tty.py"
+    "test:setup": "tsx test/e2e/setupFree.selftest.ts && python3 test/e2e/setupFree.tty.py",
+    "build:writeup": "node scripts/build-writeup.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
@@ -198,6 +199,7 @@
     "@types/vscode": "^1.95.0",
     "@vscode/test-electron": "^3.1.0",
     "esbuild": "^0.28.2",
+    "mermaid": "^11.17.2",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vitest": "^5.1.1"

@@ -1,0 +1,13 @@
+{
+  "videoUrl": "",
+  "team": [
+    { "name": "Piyush Rokade", "org": "", "github": "@rokadepiyush49-rgb" }
+  ],
+  "models": [
+    { "role": "Inline edit (Task A); fallback (Task C)", "fqn": "groq/gpt-oss-120b", "where": "Groq API, free tier", "cost": "$0" },
+    { "role": "Agent mode (Task B), primary", "fqn": "google-gemini/gemini-3-5-flash-lite", "where": "Google Gemini API, pay-as-you-go", "cost": "" },
+    { "role": "Task C broken primary", "fqn": "broken/unreachable (127.0.0.1:9)", "where": "local TrueForge config", "cost": "$0" },
+    { "role": "Automated tests", "fqn": "mock/* (scripted OpenAI-compatible server)", "where": "local", "cost": "$0" }
+  ],
+  "timestamps": { "A1": "", "A2": "", "A3": "", "B1": "", "B2": "", "B3": "", "B4": "" }
+}
