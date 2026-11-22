@@ -66,6 +66,10 @@
         "title": "ForgePilot: Undo Last Applied Change"
       },
       {
+        "command": "forgepilot.undoLastRun",
+        "title": "ForgePilot: Undo Last Run (all files)"
+      },
+      {
         "command": "forgepilot.cancel",
         "title": "ForgePilot: Cancel Running Generation"
       },
@@ -88,6 +92,10 @@
       {
         "command": "forgepilot.reconsiderHunk",
         "title": "ForgePilot: Reconsider Hunk"
+      },
+      {
+        "command": "forgepilot.allowPendingCommands",
+        "title": "ForgePilot: Allow Pending Commands"
       }
     ],
     "keybindings": [
@@ -163,6 +171,10 @@
         {
           "command": "forgepilot.reconsiderHunk",
           "when": "false"
+        },
+        {
+          "command": "forgepilot.allowPendingCommands",
+          "when": "false"
         }
       ],
       "editor/context": [
@@ -186,7 +198,8 @@
     "setup:models": "node scripts/setup-models.mjs",
     "setup:free": "node scripts/setup-free.mjs",
     "test:setup": "tsx test/e2e/setupFree.selftest.ts && python3 test/e2e/setupFree.tty.py",
-    "build:writeup": "node scripts/build-writeup.mjs"
+    "build:writeup": "node scripts/build-writeup.mjs",
+    "demo:record": "npm run build && node esbuild.mjs --demo && node out/demo/runDemo.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",

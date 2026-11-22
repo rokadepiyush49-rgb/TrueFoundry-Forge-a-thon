@@ -26,6 +26,19 @@ if (process.argv.includes("--tests")) {
     logLevel: "warning",
   });
 }
+// scripted demo recorder (only with --demo)
+if (process.argv.includes("--demo")) {
+  await esbuild.build({
+    entryPoints: { demoSuite: "test/demo/demoSuite.ts", runDemo: "test/demo/runDemo.ts" },
+    bundle: true,
+    platform: "node",
+    target: "node20",
+    format: "cjs",
+    outdir: "out/demo",
+    external: ["vscode", "@vscode/test-electron"],
+    logLevel: "warning",
+  });
+}
 if (watch) {
   await ctx.watch();
 } else {

@@ -128,6 +128,13 @@ export class AgentViewProvider implements vscode.WebviewViewProvider {
     });
   }
 
+  /** Allow every pending command request (the panel's "Run" button, for scripted demos). */
+  allowPendingCommands(): number {
+    const pending = [...this.pendingCommands.values()];
+    for (const finish of pending) finish(true);
+    return pending.length;
+  }
+
   denyPendingCommands(): void {
     for (const finish of [...this.pendingCommands.values()]) finish(false);
   }

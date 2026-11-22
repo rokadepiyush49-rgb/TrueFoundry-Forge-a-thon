@@ -222,7 +222,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<ForgePilot
         });
       });
       void vscode.window.withProgress(
-        { location: vscode.ProgressLocation.Notification, title: "ForgePilot inline edit", cancellable: true },
+        { location: vscode.ProgressLocation.Notification, title: `ForgePilot inline edit: “${instruction.length > 90 ? instruction.slice(0, 90) + "…" : instruction}”`, cancellable: true },
         async (progress, token) => {
           token.onCancellationRequested(() => void c.cancel());
           const tick = setInterval(() => progress.report({ message: `streaming from ${model}… ${chars} chars` }), 150);
@@ -244,6 +244,22 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<ForgePilot
       const r = await c.cancel();
       out.info(`Cancelled in ${Date.now() - t0} ms (discarded ${r.discarded} pending review(s), killed ${r.killed} command(s)).`);
     }),
+
+    vscode.commands.registerCommand("forgepilot.undoLastRun", async () => {
+      const last = c.journal.lastActive();
+      if (!last) {
+        void vscode.window.showInformationMessage("ForgePilot: nothing to undo.");
+        return;
+      }
+      try {
+        await c.undoTurn(last.turnKey);
+        void vscode.window.setStatusBarMessage(`ForgePilot: undid every change from “${last.source.slice(0, 60)}”`, 6000);
+      } catch (e) {
+        void vscode.window.showWarningMessage(`ForgePilot: ${(e as Error).message}`);
+      }
+    }),
+
+    vscode.commands.registerCommand("forgepilot.allowPendingCommands", () => view.allowPendingCommands()),
 
     vscode.commands.registerCommand("forgepilot.undoLastChange", async () => {
       try {
