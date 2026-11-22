@@ -29,6 +29,21 @@ export const FREE_PROVIDERS = [
     test: "groq/gpt-oss-120b",
   },
   {
+    id: "openrouter",
+    label: "OpenRouter, free models (free key from https://openrouter.ai/keys, no card)",
+    manifest: (key) => ({
+      name: "openrouter",
+      type: "custom",
+      baseUrl: "https://openrouter.ai/api/v1",
+      auth: { apiKey: key },
+      models: [
+        { name: "gemma-4-31b-free", modelId: "google/gemma-4-31b-it:free", properties: { contextLength: 262144 } },
+        { name: "nemotron-ultra-free", modelId: "nvidia/nemotron-3-ultra-550b-a55b:free", properties: { contextLength: 1000000 } },
+      ],
+    }),
+    test: "openrouter/gemma-4-31b-free",
+  },
+  {
     id: "anthropic",
     label: "Anthropic, paid, optional (key from https://platform.claude.com/settings/keys)",
     manifest: (key) => ({
