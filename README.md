@@ -330,6 +330,12 @@ The brief accepts "a provider's free tier" or "an open-source model running on y
 | Fallback (Task C) | `groq/gpt-oss-120b` (type `custom`, `https://api.groq.com/openai/v1`) | Groq free plan; ~8K tokens/min is too small for agent mode but ample for inline edits, which is all Task C needs |
 | Optional, unlimited | a 7-8B coder model in Ollama (`http://127.0.0.1:11434/v1`) | runs on the laptop; fine for inline edit, slow for agent mode |
 
+Set it up with one command. It asks for each free key with hidden input, sends the keys only to your local TrueForge (never to disk) and checks each model with a one-line request:
+
+```bash
+npm run setup:free
+```
+
 Free tiers rate-limit mid-run. ForgePilot handles that:
 
 - **Per-minute limits:** it waits out the provider's suggested delay on the **same** model (up to 4 attempts, at most 60 s per wait) instead of abandoning it.
