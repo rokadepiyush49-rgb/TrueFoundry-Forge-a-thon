@@ -29,6 +29,22 @@ export const FREE_PROVIDERS = [
     test: "groq/gpt-oss-120b",
   },
   {
+    id: "nvidia",
+    label: "NVIDIA API, free for prototyping (free key from https://build.nvidia.com, no card)",
+    manifest: (key) => ({
+      name: "nvidia",
+      type: "custom",
+      baseUrl: "https://integrate.api.nvidia.com/v1",
+      auth: { apiKey: key },
+      models: [
+        { name: "mistral-large-4", modelId: "mistralai/mistral-large-4-1t-a52b", properties: { contextLength: 262144 } },
+        { name: "kimi-k3-1-pro", modelId: "moonshotai/kimi-k3.1-pro", properties: { contextLength: 262144 } },
+        { name: "glm-5-3-flash", modelId: "z-ai/glm-5.3-flash", properties: { contextLength: 131072 } },
+      ],
+    }),
+    test: "nvidia/mistral-large-4",
+  },
+  {
     id: "openrouter",
     label: "OpenRouter, free models (free key from https://openrouter.ai/keys, no card)",
     manifest: (key) => ({
