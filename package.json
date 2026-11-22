@@ -176,7 +176,7 @@
     "test:vscode": "npm run build && node esbuild.mjs --tests && node out/vscode-test/runTest.js",
     "setup:models": "node scripts/setup-models.mjs",
     "setup:free": "node scripts/setup-free.mjs",
-    "test:setup": "tsx test/e2e/setupFree.selftest.ts"
+    "test:setup": "tsx test/e2e/setupFree.selftest.ts && python3 test/e2e/setupFree.tty.py"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",

@@ -10,45 +10,92 @@ import { TrueForge } from "@truefoundry/trueforge-sdk";
 const url = process.env.TRUEFORGE_URL || "http://localhost:8790";
 const client = new TrueForge({ baseUrl: url, timeoutInSeconds: 120 });
 
-// One reader for all prompts; typed characters are echoed as "*". Lines are
-// queued as they arrive, so input pasted before a prompt appears is not lost.
-const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: Boolean(process.stdin.isTTY) });
-let masking = false;
-let closed = false;
-const queue = [];
-let waiter = null;
-rl.on("line", (line) => {
-  if (waiter) {
-    const w = waiter;
-    waiter = null;
-    w(line);
-  } else queue.push(line);
-});
-rl.on("close", () => {
-  closed = true;
-  if (waiter) waiter("");
-});
-rl._writeToOutput = (s) => {
-  if (!masking || s.includes("\n") || s.includes("\r")) rl.output.write(s);
-  else rl.output.write("*".repeat(s.length));
-};
+const DRY_RUN = process.argv.includes("--dry-run");
+
+// Interactive: keep the terminal in no-echo (raw) mode for the whole run, so a
+// key pasted early (e.g. while the previous key is being checked) is never
+// echoed in plain text. Restore the terminal however the script exits.
+if (process.stdin.isTTY) {
+  process.stdin.setRawMode(true);
+  const restore = () => {
+    try {
+      process.stdin.setRawMode(false);
+    } catch {
+      /* already closed */
+    }
+  };
+  process.on("exit", restore);
+}
+
+// Non-interactive input (piped, used by the self-test): queue lines as they arrive.
+let pipedLines = null;
+if (!process.stdin.isTTY) {
+  pipedLines = { queue: [], waiter: null, closed: false };
+  const rl = readline.createInterface({ input: process.stdin, terminal: false });
+  rl.on("line", (line) => {
+    if (pipedLines.waiter) {
+      const w = pipedLines.waiter;
+      pipedLines.waiter = null;
+      w(line);
+    } else pipedLines.queue.push(line);
+  });
+  rl.on("close", () => {
+    pipedLines.closed = true;
+    if (pipedLines.waiter) pipedLines.waiter("");
+  });
+}
+
+/**
+ * Read a secret without echoing it: the prompt stays visible and every typed
+ * or pasted character shows as "*". Backspace and Ctrl-C work; bracketed-paste
+ * markers some terminals add are stripped.
+ */
 function askHidden(question) {
-  masking = false;
-  rl.output.write(question);
-  if (queue.length) {
-    rl.output.write("(received)\n");
-    return Promise.resolve(queue.shift().trim());
+  process.stdout.write(question);
+  if (pipedLines) {
+    if (pipedLines.queue.length) {
+      process.stdout.write("(received)\n");
+      return Promise.resolve(pipedLines.queue.shift().trim());
+    }
+    if (pipedLines.closed) {
+      process.stdout.write("\n");
+      return Promise.resolve("");
+    }
+    return new Promise((resolve) => (pipedLines.waiter = (l) => resolve(l.trim())));
   }
-  if (closed) {
-    rl.output.write("\n");
-    return Promise.resolve("");
-  }
-  masking = true;
   return new Promise((resolve) => {
-    waiter = (line) => {
-      masking = false;
-      resolve(line.trim());
+    const stdin = process.stdin;
+    let buf = "";
+    stdin.setEncoding("utf8");
+    stdin.resume();
+    const done = (value) => {
+      stdin.off("data", onData);
+      stdin.pause();
+      process.stdout.write("\n");
+      resolve(value.trim());
     };
+    const onData = (chunk) => {
+      const text = chunk.replace(/\x1b\[20[01]~/g, "").replace(/\x1b\[[0-9;]*[A-Za-z~]/g, "");
+      for (const ch of text) {
+        if (ch === "\r" || ch === "\n") return done(buf);
+        if (ch === "\u0003") {
+          process.stdout.write("\n");
+          process.exit(130); // the exit handler restores the terminal
+        }
+        if (ch === "\u007f" || ch === "\b") {
+          if (buf.length) {
+            buf = buf.slice(0, -1);
+            process.stdout.write("\b \b");
+          }
+          continue;
+        }
+        if (ch >= " ") {
+          buf += ch;
+          process.stdout.write("*");
+        }
+      }
+    };
+    stdin.on("data", onData);
   });
 }
 
@@ -97,6 +144,15 @@ const providers = process.env.FORGEPILOT_SETUP_SELFTEST ? JSON.parse(process.env
   },
 ];
 
+if (DRY_RUN) {
+  // Exercise the prompts only: report what was received, contact nothing.
+  for (const p of [{ label: "first secret" }, { label: "second secret" }]) {
+    const v = await askHidden(`Paste your ${p.label} (Enter to skip): `);
+    console.log(`  received ${v.length} characters`);
+  }
+  process.exit(0);
+}
+
 try {
   await client.models.list();
 } catch (e) {
@@ -123,7 +179,6 @@ for (const p of providers) {
   }
 }
 
-rl.close();
 if (registered.length) {
   console.log("Working models:", registered.join(", "));
   console.log('\nIn VS Code run "ForgePilot: Choose Models" and pick them (primary first),');
